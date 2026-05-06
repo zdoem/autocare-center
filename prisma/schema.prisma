@@ -1,0 +1,834 @@
+// Autocar Service Center - Database Schema
+// Generated for PostgreSQL with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 🔐 AUTHENTICATION & USERS
+// ============================================
+
+model User {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  username   String    @unique
+  password   String
+  name       String
+  role       UserRole  @default(TECHNICIAN)
+  employeeId String?   @unique
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Relations
+  serviceJobs  ServiceJob[]
+  cashReceipts CashReceipt[]
+  payments     Payment[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  CASHIER
+  TECHNICIAN
+  INVENTORY
+}
+
+// ============================================
+// 👥 MASTER DATA - HR
+// ============================================
+
+model Department {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  description   String?
+  employeeCount Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  positions Position[]
+  employees Employee[]
+
+  @@map("departments")
+}
+
+model Position {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  baseSalary  Decimal? @db.Decimal(10, 2)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  employees    Employee[]
+
+  @@map("positions")
+}
+
+model EmployeeType {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  name             String
+  description      String?
+  leaveEntitlement String?
+  employeeCount    Int      @default(0)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  employees Employee[]
+
+  @@map("employee_types")
+}
+
+model Employee {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  name           String
+  nickname       String?
+  idCard         String?       @unique
+  phone          String?
+  email          String?
+  address        String?
+  departmentId   String
+  department     Department    @relation(fields: [departmentId], references: [id])
+  positionId     String
+  position       Position      @relation(fields: [positionId], references: [id])
+  employeeTypeId String?
+  employeeType   EmployeeType? @relation(fields: [employeeTypeId], references: [id])
+  salary         Decimal       @default(0) @db.Decimal(10, 2)
+  startDate      DateTime
+  endDate        DateTime?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  username String? @unique
+  password String?
+  role     String?
+
+  user             User?
+  serviceJobs      ServiceJob[]
+  serviceJobLabors ServiceJobLabor[]
+
+  @@map("employees")
+}
+
+// ============================================
+// 👤 MASTER DATA - CUSTOMERS
+// ============================================
+
+model CustomerType {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  discount    Decimal  @default(0) @db.Decimal(5, 2) // % discount
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customers Customer[]
+
+  @@map("customer_types")
+}
+
+model Customer {
+  id             String       @id @default(cuid())
+  code           String       @unique
+  firstName      String
+  lastName       String
+  fullName       String // firstName + lastName
+  phone          String
+  email          String?
+  lineId         String? // LINE messenger ID
+  address        String?
+  taxId          String?
+  customerTypeId String
+  customerType   CustomerType @relation(fields: [customerTypeId], references: [id])
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  cars                 Car[]
+  serviceJobs          ServiceJob[]
+  maintenanceReminders MaintenanceReminder[]
+
+  @@map("customers")
+}
+
+// ============================================
+// 🚗 MASTER DATA - VEHICLES
+// ============================================
+
+model CarBrand {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  nameThai    String
+  nameEnglish String
+  name        String // Kept for backward compatibility
+  description String?
+  logoUrl     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  models CarModel[]
+  cars   Car[]
+
+  @@map("car_brands")
+}
+
+model CarModel {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  carBrandId  String
+  carBrand    CarBrand @relation(fields: [carBrandId], references: [id])
+  description String?
+  yearStart   Int?
+  yearEnd     Int?
+  vehicleType String? // รถเก๋ง, กระบะ, SUV, Van
+  fuelType    String? // เบนซิน, ดีเซล, ไฮบริด, EV, PHEV
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cars Car[]
+
+  @@map("car_models")
+}
+
+model Car {
+  id           String   @id @default(cuid())
+  code         String   @unique // Format: YYYYMMDD-XXX (date-based registration code)
+  licensePlate String   @unique
+  province     String?
+  carBrandId   String
+  carBrand     CarBrand @relation(fields: [carBrandId], references: [id])
+  carModelId   String
+  carModel     CarModel @relation(fields: [carModelId], references: [id])
+  year         Int?
+  color        String?
+  vin          String? // Vehicle Identification Number
+  engineNo     String?
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id])
+  mileage      Int?     @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  images               CarImage[]
+  serviceJobs          ServiceJob[]
+  maintenanceReminders MaintenanceReminder[]
+
+  @@map("cars")
+}
+
+model CarImage {
+  id        String   @id @default(cuid())
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  imageUrl  String // Path: /images/car/{year}/{licensePlate}/{filename}
+  createdAt DateTime @default(now())
+
+  @@map("car_images")
+}
+
+// ============================================
+// 🔧 MASTER DATA - SERVICES & SPARES
+// ============================================
+
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services Service[]
+
+  @@map("service_categories")
+}
+
+model Service {
+  id                String           @id @default(cuid())
+  code              String           @unique
+  name              String
+  description       String?
+  serviceCategoryId String?
+  serviceCategory   ServiceCategory? @relation(fields: [serviceCategoryId], references: [id])
+  price             Decimal          @default(0) @db.Decimal(10, 2)
+  laborCost         Decimal?         @db.Decimal(10, 2)
+  laborHours        Decimal?         @db.Decimal(5, 2)
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  serviceJobItems           ServiceJobItem[]
+  maintenanceTemplateItems  MaintenanceTemplateItem[]
+  serviceJobRecommendations ServiceJobRecommendation[]
+
+  @@map("services")
+}
+
+model SparesCategory {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  spares Spare[]
+
+  @@map("spares_categories")
+}
+
+model Spare {
+  id               String          @id @default(cuid())
+  code             String          @unique
+  name             String
+  description      String?
+  sparesCategoryId String?
+  sparesCategory   SparesCategory? @relation(fields: [sparesCategoryId], references: [id])
+  vendorId         String?
+  vendor           Vendor?         @relation(fields: [vendorId], references: [id])
+  unit             String          @default("ชิ้น")
+  costPrice        Decimal         @default(0) @db.Decimal(10, 2)
+  sellingPrice     Decimal         @default(0) @db.Decimal(10, 2)
+  minStock         Int             @default(0)
+  maxStock         Int             @default(100)
+  currentStock     Int             @default(0)
+  reorderPoint     Int             @default(10)
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  serviceJobItems ServiceJobItem[]
+  purchaseItems   PurchaseItem[]
+  stockMovements  StockMovement[]
+
+  @@map("spares")
+}
+
+// ============================================
+// 🏢 MASTER DATA - VENDORS
+// ============================================
+
+model Vendor {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  address     String?
+  taxId       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  spares    Spare[]
+  purchases Purchase[]
+
+  @@map("vendors")
+}
+
+// ============================================
+// 💳 MASTER DATA - PAYMENT TYPES
+// ============================================
+
+model PaymentType {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payments Payment[]
+
+  @@map("payment_types")
+}
+
+// ============================================
+// 🔧 OPERATIONS - SERVICE JOBS
+// ============================================
+
+model ServiceJob {
+  id              String      @id @default(cuid())
+  jobNo           String      @unique
+  jobDate         DateTime    @default(now())
+  carId           String
+  car             Car         @relation(fields: [carId], references: [id])
+  customerId      String
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  mileage         Int?
+  technicianId    String?
+  technician      Employee?   @relation(fields: [technicianId], references: [id])
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id])
+  status          JobStatus   @default(RECEIVED)
+  priority        JobPriority @default(NORMAL)
+  description     String?
+  customerRequest String?
+
+  // ⭐ NEW: Workflow Enhancement Fields
+  estimatedCompletionDays Int       @default(1)
+  inspectionChecklist     Json? // Pre-service inspection checklist
+  workshopBay             String? // Workshop bay assignment (e.g., "1", "2", "A")
+  appointmentDate         DateTime? // Scheduled appointment
+
+  // ⭐ NEW: Quotation & Approval
+  quotationNo       String?        @unique
+  quotationDate     DateTime?
+  quotationExpiry   DateTime?
+  approvalStatus    ApprovalStatus @default(PENDING)
+  approvedBy        String? // Customer name who approved
+  approvedDate      DateTime?
+  approvalSignature String? // Path to signature image
+  approvalNotes     String?
+
+  receivedDate  DateTime  @default(now())
+  startDate     DateTime?
+  completedDate DateTime?
+  deliveryDate  DateTime?
+  estimatedCost Decimal?  @db.Decimal(10, 2)
+  actualCost    Decimal?  @db.Decimal(10, 2)
+  laborCost     Decimal   @default(0) @db.Decimal(10, 2)
+  partsCost     Decimal   @default(0) @db.Decimal(10, 2)
+  totalCost     Decimal   @default(0) @db.Decimal(10, 2)
+  discount      Decimal   @default(0) @db.Decimal(10, 2)
+  vat           Decimal   @default(7) @db.Decimal(5, 2)
+  vatAmount     Decimal   @default(0) @db.Decimal(10, 2)
+  grandTotal    Decimal   @default(0) @db.Decimal(10, 2)
+  isPaid        Boolean   @default(false)
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  items           ServiceJobItem[]
+  payments        Payment[]
+  cashReceipts    CashReceipt[]
+  laborRecords    ServiceJobLabor[] // ⭐ NEW
+  qc              ServiceJobQC? // ⭐ NEW
+  media           ServiceJobMedia[] // ⭐ NEW
+  recommendations ServiceJobRecommendation[] // ⭐ NEW
+
+  @@map("service_jobs")
+}
+
+enum JobStatus {
+  RECEIVED // รับรถเข้า
+  INSPECTION // กำลังตรวจเช็ค
+  WAITING_APPROVAL // รออนุมัติลูกค้า
+  APPROVED // ลูกค้าอนุมัติแล้ว
+  IN_PROGRESS // กำลังซ่อม
+  WAITING_PARTS // รออะไหล่
+  QC_CHECK // กำลัง QC
+  WAITING_PAYMENT // รอชำระเงิน
+  COMPLETED // เสร็จสิ้น
+  DELIVERED // ส่งมอบแล้ว
+  CANCELLED // ยกเลิก
+}
+
+enum ApprovalStatus {
+  PENDING // รออนุมัติ
+  APPROVED // อนุมัติ
+  REJECTED // ปฏิเสธ
+  REVISED // แก้ไขใบเสนอราคา
+}
+
+enum JobPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model ServiceJobItem {
+  id           String     @id @default(cuid())
+  serviceJobId String
+  serviceJob   ServiceJob @relation(fields: [serviceJobId], references: [id], onDelete: Cascade)
+  itemType     ItemType   @default(SERVICE)
+  serviceId    String?
+  service      Service?   @relation(fields: [serviceId], references: [id])
+  spareId      String?
+  spare        Spare?     @relation(fields: [spareId], references: [id])
+  description  String
+
+  // ⭐ UPDATED: Separate Estimated vs Actual
+  quantity     Decimal @default(1) @db.Decimal(10, 2) // Legacy (for compatibility)
+  estimatedQty Decimal @default(0) @db.Decimal(10, 2) // ประเมิน
+  actualQty    Decimal @default(0) @db.Decimal(10, 2) // ใช้จริง
+
+  unitPrice Decimal @default(0) @db.Decimal(10, 2)
+  discount  Decimal @default(0) @db.Decimal(10, 2)
+  total     Decimal @default(0) @db.Decimal(10, 2)
+
+  // ⭐ NEW: Change tracking
+  isModified     Boolean @default(false) // แก้ไขจากประเมิน
+  modifiedReason String? // เหตุผลที่เปลี่ยน
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  laborRecords ServiceJobLabor[] // ⭐ NEW: Related labor
+
+  @@map("service_job_items")
+}
+
+enum ItemType {
+  SERVICE
+  SPARE
+}
+
+// ============================================
+// ⭐ NEW: LABOR HOURS TRACKING
+// ============================================
+
+model ServiceJobLabor {
+  id               String          @id @default(cuid())
+  serviceJobId     String
+  serviceJob       ServiceJob      @relation(fields: [serviceJobId], references: [id], onDelete: Cascade)
+  technicianId     String
+  technician       Employee        @relation(fields: [technicianId], references: [id])
+  serviceJobItemId String? // Optional: specific to an item
+  serviceJobItem   ServiceJobItem? @relation(fields: [serviceJobItemId], references: [id])
+
+  description String? // งานที่ทำ
+  startTime   DateTime?
+  endTime     DateTime?
+  hoursWorked Decimal   @default(0) @db.Decimal(5, 2) // ชั่วโมงจริง
+  laborRate   Decimal   @default(0) @db.Decimal(10, 2) // อัตราต่อชั่วโมง
+  laborCost   Decimal   @default(0) @db.Decimal(10, 2) // รวม = hours * rate
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("service_job_labor")
+}
+
+// ============================================
+// ⭐ NEW: QC CHECKLIST & DELIVERY SIGN-OFF
+// ============================================
+
+model ServiceJobQC {
+  id           String     @id @default(cuid())
+  serviceJobId String     @unique
+  serviceJob   ServiceJob @relation(fields: [serviceJobId], references: [id], onDelete: Cascade)
+
+  // QC Checklist (stored as JSON)
+  qcChecklist Json? // Detailed checklist
+  qcPassedAll Boolean   @default(false)
+  qcNotes     String?
+  qcBy        String? // QC inspector name
+  qcDate      DateTime?
+
+  // Delivery Sign-off
+  deliveredBy       String? // ผู้ส่งมอบ
+  receivedBy        String? // ผู้รับรถ (customer name)
+  deliverySignature String? // Path to signature image
+  deliveryDate      DateTime?
+  deliveryNotes     String?
+  customerRating    Int? // Optional: 1-5 stars
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("service_job_qc")
+}
+
+// ============================================
+// ⭐ NEW: MEDIA ATTACHMENTS (PHOTOS/VIDEOS)
+// ============================================
+
+model ServiceJobMedia {
+  id           String     @id @default(cuid())
+  serviceJobId String
+  serviceJob   ServiceJob @relation(fields: [serviceJobId], references: [id], onDelete: Cascade)
+
+  mediaType    MediaType @default(IMAGE)
+  mediaUrl     String // Path: /media/jobs/{jobNo}/{filename}
+  thumbnailUrl String? // For videos
+
+  category    String? // before, during, after, damage, repair, qc
+  description String?
+  uploadedBy  String? // Employee name
+
+  createdAt DateTime @default(now())
+
+  @@map("service_job_media")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+// ============================================
+// ⭐ NEW: MAINTENANCE TEMPLATES & RECOMMENDED SERVICES
+// ============================================
+
+model MaintenanceTemplate {
+  id          String  @id @default(cuid())
+  name        String // e.g., "10,000 km Service"
+  description String?
+
+  mileageInterval Int? // Every X km (e.g., 10000)
+  monthInterval   Int? // Every X months (e.g., 6)
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items MaintenanceTemplateItem[]
+
+  @@map("maintenance_templates")
+}
+
+model MaintenanceTemplateItem {
+  id                    String              @id @default(cuid())
+  maintenanceTemplateId String
+  maintenanceTemplate   MaintenanceTemplate @relation(fields: [maintenanceTemplateId], references: [id], onDelete: Cascade)
+  serviceId             String?
+  service               Service?            @relation(fields: [serviceId], references: [id])
+  description           String
+  isRequired            Boolean             @default(true)
+  estimatedCost         Decimal?            @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@map("maintenance_template_items")
+}
+
+model ServiceJobRecommendation {
+  id           String     @id @default(cuid())
+  serviceJobId String
+  serviceJob   ServiceJob @relation(fields: [serviceJobId], references: [id], onDelete: Cascade)
+
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id])
+  description String
+
+  reason        String? // e.g., "ครบกำหนด 10,000 km"
+  priority      RecommendationPriority @default(RECOMMENDED)
+  estimatedCost Decimal?               @db.Decimal(10, 2)
+
+  dueAtMileage Int? // ครบที่เลขไมล์เท่าไร
+  dueAtDate    DateTime? // ครบวันที่
+
+  isAccepted   Boolean   @default(false) // ลูกค้ารับหรือไม่
+  acceptedDate DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@map("service_job_recommendations")
+}
+
+enum RecommendationPriority {
+  URGENT // เร่งด่วน
+  RECOMMENDED // แนะนำ
+  OPTIONAL // ไม่จำเป็น
+}
+
+// ============================================
+// ⭐ NEW: MAINTENANCE REMINDERS
+// ============================================
+
+model MaintenanceReminder {
+  id         String   @id @default(cuid())
+  carId      String
+  car        Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  reminderType ReminderType
+  title        String // e.g., "เปลี่ยนถ่ายน้ำมันเครื่อง"
+  description  String?
+
+  // Trigger conditions
+  dueAtMileage Int? // แจ้งเตือนเมื่อถึงเลขไมล์
+  dueAtDate    DateTime? // แจ้งเตือนเมื่อถึงวันที่
+
+  // Notification settings
+  notifyBeforeDays Int? // แจ้งเตือนก่อน X วัน
+  notifyBeforeKm   Int? // แจ้งเตือนก่อน X km
+  lastNotified     DateTime? // แจ้งครั้งล่าสุดเมื่อไร
+  notifyVia        String? // SMS, Email, LINE
+
+  status        ReminderStatus @default(ACTIVE)
+  completedDate DateTime? // วันที่ทำเสร็จ
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("maintenance_reminders")
+}
+
+enum ReminderType {
+  MILEAGE_BASED // ตามเลขไมล์
+  TIME_BASED // ตามเวลา
+  BOTH // ทั้งสองอย่าง
+}
+
+enum ReminderStatus {
+  ACTIVE // กำลังใช้งาน
+  COMPLETED // ทำเสร็จแล้ว
+  CANCELLED // ยกเลิก
+  SNOOZED // เลื่อนการแจ้งเตือน
+}
+
+// ============================================
+// 💰 CASH & PAYMENTS
+// ============================================
+
+model Payment {
+  id            String      @id @default(cuid())
+  paymentNo     String      @unique
+  paymentDate   DateTime    @default(now())
+  serviceJobId  String?
+  serviceJob    ServiceJob? @relation(fields: [serviceJobId], references: [id])
+  paymentTypeId String
+  paymentType   PaymentType @relation(fields: [paymentTypeId], references: [id])
+  amount        Decimal     @db.Decimal(10, 2)
+  reference     String? // เลขที่อ้างอิง (เช็ค, โอน)
+  bankName      String?
+  accountNo     String?
+  notes         String?
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("payments")
+}
+
+model CashReceipt {
+  id           String      @id @default(cuid())
+  receiptNo    String      @unique
+  receiptDate  DateTime    @default(now())
+  serviceJobId String?
+  serviceJob   ServiceJob? @relation(fields: [serviceJobId], references: [id])
+  amount       Decimal     @db.Decimal(10, 2)
+  vat          Decimal     @default(0) @db.Decimal(10, 2)
+  total        Decimal     @db.Decimal(10, 2)
+  receivedBy   String?
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id])
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("cash_receipts")
+}
+
+// ============================================
+// 📦 INVENTORY - PURCHASES & STOCK
+// ============================================
+
+model Purchase {
+  id           String         @id @default(cuid())
+  purchaseNo   String         @unique
+  purchaseDate DateTime       @default(now())
+  vendorId     String
+  vendor       Vendor         @relation(fields: [vendorId], references: [id])
+  totalAmount  Decimal        @default(0) @db.Decimal(10, 2)
+  vat          Decimal        @default(7) @db.Decimal(5, 2)
+  vatAmount    Decimal        @default(0) @db.Decimal(10, 2)
+  grandTotal   Decimal        @default(0) @db.Decimal(10, 2)
+  status       PurchaseStatus @default(PENDING)
+  receivedDate DateTime?
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  items PurchaseItem[]
+
+  @@map("purchases")
+}
+
+enum PurchaseStatus {
+  PENDING
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseItem {
+  id         String   @id @default(cuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  spareId    String
+  spare      Spare    @relation(fields: [spareId], references: [id])
+  quantity   Decimal  @db.Decimal(10, 2)
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  total      Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("purchase_items")
+}
+
+model StockMovement {
+  id           String       @id @default(cuid())
+  movementNo   String       @unique
+  movementDate DateTime     @default(now())
+  movementType MovementType
+  spareId      String
+  spare        Spare        @relation(fields: [spareId], references: [id])
+  quantity     Decimal      @db.Decimal(10, 2)
+  beforeQty    Int
+  afterQty     Int
+  reference    String? // อ้างอิง purchase, service job
+  notes        String?
+  createdAt    DateTime     @default(now())
+
+  @@map("stock_movements")
+}
+
+enum MovementType {
+  IN // รับเข้า
+  OUT // เบิกออก
+  ADJUST // ปรับปรุง
+  RETURN // คืน
+}
+
+// ============================================
+// ⚙️ SYSTEM SETTINGS
+// ============================================
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  dataType    String   @default("string") // string, number, boolean, json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}

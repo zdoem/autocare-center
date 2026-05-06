@@ -1,0 +1,733 @@
+'use client'
+
+import { useState, useEffect, use } from 'react'
+import MainLayout from '@/components/layout/MainLayout'
+import { useRouter } from 'next/navigation'
+import { Modal, showSuccess, showError } from '@/components/ui'
+import Swal from 'sweetalert2' 
+
+// --- Interfaces ---
+interface JobItem {
+    id: string
+    itemType: 'SERVICE' | 'SPARE'
+    description: string
+    quantity: number
+    unitPrice: number
+    discount: number
+    total: number
+}
+
+interface ServiceJob {
+    id: string
+    jobNo: string
+    jobDate: string
+    status: string
+    technicianId?: string
+    car: {
+        licensePlate: string
+        province: string
+        carBrand: { name: string }
+        carModel: { name: string }
+        year: number
+        color: string
+        mileage: number
+    }
+    customer: {
+        fullName: string
+        phone: string
+        lineId?: string
+    }
+    customerRequest: string
+    notes: string
+    items: JobItem[]
+    laborCost: number
+    partsCost: number
+    totalCost: number
+    discount: number
+    vatAmount: number
+    grandTotal: number
+}
+
+interface MasterItem {
+    id: string
+    code: string
+    name: string
+    price: number
+    type: 'SERVICE' | 'SPARE'
+}
+
+interface SelectedItem {
+    id: string
+    code: string
+    name: string
+    type: 'SERVICE' | 'SPARE'
+    quantity: number
+    unitPrice: number
+    discount: number
+}
+
+interface Technician {
+    id: string
+    name: string
+    role: string
+}
+
+// --- Page Component ---
+export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params)
+    const router = useRouter()
+
+    const [job, setJob] = useState<ServiceJob | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false)
+
+    // Master Data
+    const [services, setServices] = useState<MasterItem[]>([])
+    const [spares, setSpares] = useState<MasterItem[]>([])
+    const [technicians, setTechnicians] = useState<Technician[]>([])
+
+    // Right Sidebar State
+    const [statusInput, setStatusInput] = useState<string>('')
+    const [technicianInput, setTechnicianInput] = useState<string>('')
+
+    // Multi-select modal state
+    const [activeTab, setActiveTab] = useState<'SERVICE' | 'SPARE'>('SERVICE')
+    const [searchQuery, setSearchQuery] = useState('')
+    const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([])
+    const [submitting, setSubmitting] = useState(false)
+
+    useEffect(() => {
+        fetchJob()
+        fetchMasterData()
+    }, [id])
+
+    const fetchJob = async () => {
+        try {
+            setLoading(true)
+            const res = await fetch(`/api/ops/job/${id}`)
+            const json = await res.json()
+            if (json.success) {
+                setJob(json.data)
+                setStatusInput(json.data.status)
+                setTechnicianInput(json.data.technicianId || '')
+            } else {
+                showError(json.error || 'ไม่พบข้อมูลงานซ่อม')
+                router.push('/ops/search')
+            }
+        } catch (error) {
+            showError('เกิดข้อผิดพลาดในการโหลดข้อมูล')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const fetchMasterData = async () => {
+        fetch('/api/master/service').then(res => res.json()).then(json => {
+            if (Array.isArray(json)) setServices(json.map((s: any) => ({ ...s, type: 'SERVICE' as const, price: Number(s.price) })))
+        })
+        fetch('/api/master/spare').then(res => res.json()).then(json => {
+            if (Array.isArray(json)) setSpares(json.map((s: any) => ({ ...s, type: 'SPARE' as const, price: Number(s.sellingPrice) })))
+        })
+        fetch('/api/master/employee?limit=999').then(res => res.json()).then(json => {
+            if (json.success && Array.isArray(json.data)) {
+                // Filter technicians (or just use all employees if role isn't strictly TECHNICIAN)
+                const techs = json.data.filter((e: any) => e.role === 'TECHNICIAN' || e.positionName?.includes('ช่าง'))
+                setTechnicians(techs.length > 0 ? techs : json.data)
+            }
+        })
+    }
+
+    // Modal Logic
+    const getFilteredList = () => {
+        const list = activeTab === 'SERVICE' ? services : spares
+        if (!searchQuery.trim()) return list
+        const q = searchQuery.toLowerCase()
+        return list.filter(i => i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q))
+    }
+
+    const isItemSelected = (itemId: string) => selectedItems.some(s => s.id === itemId)
+
+    const toggleItem = (item: MasterItem) => {
+        if (isItemSelected(item.id)) {
+            setSelectedItems(prev => prev.filter(s => s.id !== item.id))
+        } else {
+            setSelectedItems(prev => [...prev, {
+                id: item.id,
+                code: item.code,
+                name: item.name,
+                type: item.type,
+                quantity: 1,
+                unitPrice: Number(item.price),
+                discount: 0,
+            }])
+        }
+    }
+
+    const updateSelectedItemField = (itemId: string, field: 'quantity' | 'discount', value: number) => {
+        setSelectedItems(prev => prev.map(s => s.id === itemId ? { ...s, [field]: value } : s))
+    }
+
+    const getSelectedTotal = () => selectedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice - item.discount), 0)
+
+    const openModal = (tab: 'SERVICE' | 'SPARE' = 'SERVICE') => {
+        setSelectedItems([])
+        setSearchQuery('')
+        setActiveTab(tab)
+        setIsAddItemModalOpen(true)
+    }
+
+    const handleBatchAddItems = async () => {
+        if (selectedItems.length === 0) {
+            showError('กรุณาเลือกอย่างน้อย 1 รายการ')
+            return
+        }
+        setSubmitting(true)
+        try {
+            const res = await fetch('/api/ops/job-item/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    serviceJobId: id,
+                    items: selectedItems.map(item => ({
+                        itemType: item.type,
+                        serviceId: item.type === 'SERVICE' ? item.id : undefined,
+                        spareId: item.type === 'SPARE' ? item.id : undefined,
+                        description: item.name,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        discount: item.discount,
+                    })),
+                }),
+            })
+            const json = await res.json()
+            if (res.ok && json.success) {
+                showSuccess(`เพิ่ม ${selectedItems.length} รายการแล้ว`)
+                setIsAddItemModalOpen(false)
+                fetchJob()
+            } else {
+                showError(json.error || 'บันทึกไม่สำเร็จ')
+            }
+        } catch (error) {
+            showError('เกิดข้อผิดพลาด')
+        } finally {
+            setSubmitting(false)
+        }
+    }
+
+    const handleDeleteItem = async (itemId: string) => {
+        if (!confirm('ลบรายการนี้?')) return
+        try {
+            const res = await fetch(`/api/ops/job-item/${itemId}`, { method: 'DELETE' })
+            if (res.ok) {
+                fetchJob()
+            }
+        } catch (error) {
+            showError('ลบรายการไม่สำเร็จ')
+        }
+    }
+
+    const handleSaveStatus = async () => {
+        try {
+            const res = await fetch(`/api/ops/job/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: statusInput, technicianId: technicianInput || undefined })
+            })
+            if (res.ok) {
+                showSuccess('บันทึกสถานะเรียบร้อยแล้ว')
+                fetchJob()
+            } else {
+                showError('บันทึกไม่สำเร็จ')
+            }
+        } catch (error) {
+            showError('เกิดข้อผิดพลาดในการบันทึก')
+        }
+    }
+
+    const handlePrimaryAction = async (newStatus: string) => {
+        try {
+            const res = await fetch(`/api/ops/job/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            })
+            if (res.ok) {
+                showSuccess('อัปเดตสถานะงานเรียบร้อยแล้ว')
+                fetchJob()
+            } else {
+                showError('อัปเดตไม่สำเร็จ')
+            }
+        } catch (error) {
+            showError('เกิดข้อผิดพลาด')
+        }
+    }
+
+    if (loading) return <div className="text-center py-5"><div className="spinner-border"></div></div>
+    if (!job) return null
+
+    // Separate services and spares for the 2 tables
+    const serviceItems = job.items.filter(item => item.itemType === 'SERVICE')
+    const spareItems = job.items.filter(item => item.itemType === 'SPARE')
+
+    return (
+        <MainLayout
+            title={<><i className="ti ti-tools me-2"></i>รายละเอียดงานซ่อม ({job.jobNo})</>}
+            pretitle="Operations / Job Detail"
+        >
+            <div className="row">
+                {/* Left Column */}
+                <div className="col-lg-8">
+                    {/* Car & Customer Info (Datagrid) */}
+                    <div className="card mb-3">
+                        <div className="card-body">
+                            <div className="row">
+                                <div className="col-md-6 mb-3 mb-md-0">
+                                    <h4 className="mb-3"><i className="ti ti-car me-2 text-blue"></i>ข้อมูลรถ</h4>
+                                    <div className="datagrid">
+                                        <div className="datagrid-item">
+                                            <div className="datagrid-title">ทะเบียน</div>
+                                            <div className="datagrid-content">
+                                                <span className="badge bg-blue fs-5">{job.car.licensePlate}</span>
+                                            </div>
+                                        </div>
+                                        <div className="datagrid-item">
+                                            <div className="datagrid-title">ยี่ห้อ/รุ่น</div>
+                                            <div className="datagrid-content">{job.car.carBrand.name} {job.car.carModel.name} {job.car.year}</div>
+                                        </div>
+                                        <div className="datagrid-item">
+                                            <div className="datagrid-title">สี</div>
+                                            <div className="datagrid-content">{job.car.color || '-'}</div>
+                                        </div>
+                                        <div className="datagrid-item">
+                                            <div className="datagrid-title">เลขไมล์</div>
+                                            <div className="datagrid-content">{job.car.mileage ? `${Number(job.car.mileage).toLocaleString()} km` : '-'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-md-6">
+                                    <h4 className="mb-3"><i className="ti ti-user me-2 text-green"></i>ข้อมูลลูกค้า</h4>
+                                    <div className="datagrid">
+                                        <div className="datagrid-item">
+                                            <div className="datagrid-title">ลูกค้า</div>
+                                            <div className="datagrid-content">{job.customer.fullName}</div>
+                                        </div>
+                                        <div className="datagrid-item">
+                                            <div className="datagrid-title">โทรศัพท์</div>
+                                            <div className="datagrid-content">
+                                                <a href={`tel:${job.customer.phone}`}>{job.customer.phone}</a>
+                                            </div>
+                                        </div>
+                                        <div className="datagrid-item">
+                                            <div className="datagrid-title">LINE</div>
+                                            <div className="datagrid-content">{job.customer.lineId || '-'}</div>
+                                        </div>
+                                    </div>
+                                    {job.customerRequest && (
+                                        <div className="mt-3">
+                                            <div className="text-muted small mb-1">อาการที่แจ้ง:</div>
+                                            <div>{job.customerRequest}</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Service Items Table */}
+                    <div className="card mb-3">
+                        <div className="card-header">
+                            <h3 className="card-title"><i className="ti ti-list-check me-2"></i>รายการซ่อม/บริการ</h3>
+                            <div className="card-actions">
+                                <button className="btn btn-sm btn-primary" onClick={() => openModal('SERVICE')}>
+                                    <i className="ti ti-plus me-1"></i>เพิ่มรายการ
+                                </button>
+                            </div>
+                        </div>
+                        <div className="table-responsive">
+                            <table className="table table-vcenter card-table">
+                                <thead>
+                                    <tr>
+                                        <th>รายการ</th>
+                                        <th className="text-end">ราคา/หน่วย</th>
+                                        <th className="text-center">จำนวน</th>
+                                        <th className="text-end">รวม</th>
+                                        <th style={{ width: '50px' }}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {serviceItems.length === 0 ? (
+                                        <tr><td colSpan={5} className="text-center text-muted py-3">ยังไม่มีรายการ</td></tr>
+                                    ) : (
+                                        serviceItems.map(item => (
+                                            <tr key={item.id}>
+                                                <td><div className="fw-medium">{item.description}</div></td>
+                                                <td className="text-end">฿{Number(item.unitPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                                <td className="text-center">{item.quantity}</td>
+                                                <td className="text-end">฿{Number(item.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                                <td>
+                                                    <a href="#" className="btn btn-ghost-danger btn-icon btn-sm" onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}>
+                                                        <i className="ti ti-trash"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Spare Parts Table */}
+                    <div className="card mb-3">
+                        <div className="card-header">
+                            <h3 className="card-title"><i className="ti ti-package me-2"></i>อะไหล่ที่ใช้</h3>
+                            <div className="card-actions">
+                                <button className="btn btn-sm btn-outline-primary" onClick={() => openModal('SPARE')}>
+                                    <i className="ti ti-plus me-1"></i>เพิ่มอะไหล่
+                                </button>
+                            </div>
+                        </div>
+                        <div className="table-responsive">
+                            <table className="table table-vcenter card-table">
+                                <thead>
+                                    <tr>
+                                        <th>รายการอะไหล่</th>
+                                        <th className="text-end">ราคา/หน่วย</th>
+                                        <th className="text-center">จำนวน</th>
+                                        <th className="text-end">รวม</th>
+                                        <th style={{ width: '50px' }}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {spareItems.length === 0 ? (
+                                        <tr><td colSpan={5} className="text-center text-muted py-3">ยังไม่มีรายการอะไหล่</td></tr>
+                                    ) : (
+                                        spareItems.map(item => (
+                                            <tr key={item.id}>
+                                                <td><div className="fw-medium">{item.description}</div></td>
+                                                <td className="text-end">฿{Number(item.unitPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                                <td className="text-center">{item.quantity}</td>
+                                                <td className="text-end">฿{Number(item.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                                <td>
+                                                    <a href="#" className="btn btn-ghost-danger btn-icon btn-sm" onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}>
+                                                        <i className="ti ti-trash"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {job.notes && (
+                        <div className="card mb-3">
+                            <div className="card-body">
+                                <h4 className="card-title"><i className="ti ti-note me-1"></i>หมายเหตุช่าง/ภายใน</h4>
+                                <p className="text-muted">{job.notes}</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Right Column */}
+                <div className="col-lg-4">
+                    {/* Status Update Card */}
+                    <div className="card mb-3">
+                        <div className="card-header">
+                            <h3 className="card-title">สถานะงาน</h3>
+                        </div>
+                        <div className="card-body">
+                            <div className="mb-3">
+                                <label className="form-label">สถานะ</label>
+                                <select className="form-select" value={statusInput} onChange={(e) => setStatusInput(e.target.value)}>
+                                    <option value="RECEIVED">รอรับรถ / รับรถแล้ว</option>
+                                    <option value="APPROVED">อนุมัติแล้ว</option>
+                                    <option value="IN_PROGRESS">กำลังซ่อม</option>
+                                    <option value="INSPECTION">ตรวจสอบ</option>
+                                    <option value="WAITING_PARTS">รออะไหล่</option>
+                                    <option value="QC_CHECK">QC ตรวจสอบ</option>
+                                    <option value="WAITING_PAYMENT">รอชำระเงิน</option>
+                                    <option value="COMPLETED">เสร็จสิ้น</option>
+                                    <option value="DELIVERED">ส่งมอบแล้ว</option>
+                                    <option value="CANCELLED">ยกเลิก</option>
+                                </select>
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">ช่างผู้รับผิดชอบ</label>
+                                <select className="form-select" value={technicianInput} onChange={(e) => setTechnicianInput(e.target.value)}>
+                                    <option value="">-- ไม่ระบุ --</option>
+                                    {technicians.map(t => (
+                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button className="btn btn-primary w-100" onClick={handleSaveStatus}>
+                                <i className="ti ti-device-floppy me-1"></i>บันทึกสถานะ
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Summary Card */}
+                    <div className="card mb-3 bg-primary-lt">
+                        <div className="card-body">
+                            <h4 className="mb-3">สรุปยอด</h4>
+                            <div className="d-flex justify-content-between mb-2">
+                                <span>ค่าแรง (บริการ)</span>
+                                <span>฿{Number(job.laborCost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="d-flex justify-content-between mb-2">
+                                <span>ค่าอะไหล่</span>
+                                <span>฿{Number(job.partsCost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            {Number(job.discount) > 0 && (
+                                <div className="d-flex justify-content-between mb-2 text-danger">
+                                    <span>ส่วนลด</span>
+                                    <span>-฿{Number(job.discount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                                </div>
+                            )}
+                            <hr />
+                            <div className="d-flex justify-content-between mb-2">
+                                <span>รวมก่อน VAT</span>
+                                <span>฿{(Number(job.laborCost) + Number(job.partsCost) - Number(job.discount)).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="d-flex justify-content-between mb-2">
+                                <span>VAT 7%</span>
+                                <span>฿{Number(job.vatAmount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <hr />
+                            <div className="d-flex justify-content-between mb-2 align-items-center">
+                                <span className="h3 mb-0">ยอดสุทธิ</span>
+                                <span className="h2 text-primary mb-0">฿{Number(job.grandTotal).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="d-grid gap-2">
+                        {(job.status === 'RECEIVED' || job.status === 'APPROVED') && (
+                            <button className="btn btn-primary btn-lg" onClick={() => handlePrimaryAction('IN_PROGRESS')}>
+                                <i className="ti ti-player-play me-1"></i>เริ่มงานซ่อม
+                            </button>
+                        )}
+                        {(job.status === 'IN_PROGRESS' || job.status === 'INSPECTION' || job.status === 'WAITING_PARTS' || job.status === 'QC_CHECK') && (
+                            <button className="btn btn-success btn-lg" onClick={() => handlePrimaryAction('WAITING_PAYMENT')}>
+                                <i className="ti ti-check me-1"></i>เสร็จงาน / ส่งชำระ
+                            </button>
+                        )}
+                        {job.status === 'WAITING_PAYMENT' && (
+                            <button className="btn btn-orange btn-lg" onClick={() => router.push(`/cash/payment?jobId=${job.id}`)}>
+                                <i className="ti ti-cash me-1"></i>ไปหน้ารับชำระเงิน
+                            </button>
+                        )}
+                        {job.status === 'COMPLETED' && (
+                            <button className="btn btn-lime btn-lg" onClick={() => handlePrimaryAction('DELIVERED')}>
+                                <i className="ti ti-car me-1"></i>ส่งมอบรถ
+                            </button>
+                        )}
+
+                        <button className="btn btn-outline-secondary" onClick={() => window.open(`/ops/job/print/${job.id}?type=quotation`, '_blank')}>
+                            <i className="ti ti-printer me-1"></i>พิมพ์ใบเสนอราคา
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Modal */}
+            <Modal
+                isOpen={isAddItemModalOpen}
+                onClose={() => setIsAddItemModalOpen(false)}
+                title="เพิ่มรายการ (Add Items)"
+                size="lg"
+                footer={
+                    <div className="d-flex justify-content-between align-items-center w-100">
+                        <div>
+                            {selectedItems.length > 0 && (
+                                <span className="text-muted">
+                                    เลือกแล้ว <strong className="text-primary">{selectedItems.length}</strong> รายการ
+                                    {' • '}
+                                    รวม <strong className="text-primary">฿{getSelectedTotal().toLocaleString('th-TH', { minimumFractionDigits: 2 })}</strong>
+                                </span>
+                            )}
+                        </div>
+                        <div className="btn-list">
+                            <button className="btn btn-link link-secondary" onClick={() => setIsAddItemModalOpen(false)}>
+                                ยกเลิก
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleBatchAddItems}
+                                disabled={selectedItems.length === 0 || submitting}
+                            >
+                                {submitting ? (
+                                    <span className="spinner-border spinner-border-sm me-1"></span>
+                                ) : (
+                                    <i className="ti ti-plus me-1"></i>
+                                )}
+                                เพิ่ม {selectedItems.length > 0 ? `${selectedItems.length} รายการ` : 'รายการ'}
+                            </button>
+                        </div>
+                    </div>
+                }
+            >
+                {/* Tabs: Service / Spare */}
+                <div className="mb-3">
+                    <ul className="nav nav-tabs">
+                        <li className="nav-item">
+                            <a
+                                className={`nav-link ${activeTab === 'SERVICE' ? 'active' : ''}`}
+                                href="#"
+                                onClick={(e) => { e.preventDefault(); setActiveTab('SERVICE'); setSearchQuery('') }}
+                            >
+                                <i className="ti ti-tool me-1"></i> ค่าบริการ
+                                {selectedItems.filter(s => s.type === 'SERVICE').length > 0 && (
+                                    <span className="badge bg-blue ms-2">{selectedItems.filter(s => s.type === 'SERVICE').length}</span>
+                                )}
+                            </a>
+                        </li>
+                        <li className="nav-item">
+                            <a
+                                className={`nav-link ${activeTab === 'SPARE' ? 'active' : ''}`}
+                                href="#"
+                                onClick={(e) => { e.preventDefault(); setActiveTab('SPARE'); setSearchQuery('') }}
+                            >
+                                <i className="ti ti-box me-1"></i> อะไหล่
+                                {selectedItems.filter(s => s.type === 'SPARE').length > 0 && (
+                                    <span className="badge bg-orange ms-2">{selectedItems.filter(s => s.type === 'SPARE').length}</span>
+                                )}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                {/* Search Box */}
+                <div className="mb-3">
+                    <div className="input-icon">
+                        <span className="input-icon-addon"><i className="ti ti-search"></i></span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder={`ค้นหาด้วยรหัส หรือ ชื่อ${activeTab === 'SERVICE' ? 'บริการ' : 'อะไหล่'}...`}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                </div>
+
+                {/* Item List Table */}
+                <div className="table-responsive" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                    <table className="table table-vcenter table-hover">
+                        <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
+                            <tr>
+                                <th style={{ width: '40px' }}></th>
+                                <th style={{ width: '80px' }}>รหัส</th>
+                                <th>ชื่อรายการ</th>
+                                <th className="text-end" style={{ width: '100px' }}>ราคา</th>
+                                <th className="text-center" style={{ width: '90px' }}>จำนวน</th>
+                                <th className="text-end" style={{ width: '110px' }}>รวม</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {getFilteredList().length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="text-center py-4 text-muted">
+                                        {searchQuery ? `ไม่พบรายการที่ตรงกับ "${searchQuery}"` : 'ไม่มีข้อมูล'}
+                                    </td>
+                                </tr>
+                            ) : (
+                                getFilteredList().map((item) => {
+                                    const selected = isItemSelected(item.id)
+                                    const selectedData = selectedItems.find(s => s.id === item.id)
+                                    return (
+                                        <tr
+                                            key={item.id}
+                                            className={selected ? 'bg-primary-lt' : ''}
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => toggleItem(item)}
+                                        >
+                                            <td className="text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="form-check-input"
+                                                    checked={selected}
+                                                    onChange={() => toggleItem(item)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            </td>
+                                            <td>
+                                                <span className="badge bg-muted">{item.code}</span>
+                                            </td>
+                                            <td className="fw-medium">{item.name}</td>
+                                            <td className="text-end">{Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                            <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                                                {selected ? (
+                                                    <input
+                                                        type="number"
+                                                        className="form-control form-control-sm text-center"
+                                                        style={{ width: '70px', margin: '0 auto' }}
+                                                        value={selectedData?.quantity || 1}
+                                                        min={1}
+                                                        onChange={(e) => updateSelectedItemField(item.id, 'quantity', Math.max(1, Number(e.target.value)))}
+                                                    />
+                                                ) : (
+                                                    <span className="text-muted">-</span>
+                                                )}
+                                            </td>
+                                            <td className="text-end fw-bold">
+                                                {selected ? (
+                                                    <span className="text-primary">
+                                                        ฿{((selectedData?.quantity || 1) * Number(item.price)).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-muted">-</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Selected Items Summary */}
+                {selectedItems.length > 0 && (
+                    <div className="mt-3 p-3 bg-light rounded">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                            <strong><i className="ti ti-shopping-cart me-1"></i>รายการที่เลือก ({selectedItems.length})</strong>
+                        </div>
+                        <div className="list-group list-group-flush">
+                            {selectedItems.map((item) => (
+                                <div key={item.id} className="list-group-item px-0 py-1 d-flex justify-content-between align-items-center bg-transparent">
+                                    <div>
+                                        <span className={`badge ${item.type === 'SERVICE' ? 'bg-blue-lt' : 'bg-orange-lt'} me-1`}>
+                                            {item.type === 'SERVICE' ? 'บริการ' : 'อะไหล่'}
+                                        </span>
+                                        <span className="small">{item.name}</span>
+                                        <span className="text-muted small ms-1">×{item.quantity}</span>
+                                    </div>
+                                    <div className="d-flex align-items-center">
+                                        <span className="fw-bold small">฿{(item.quantity * item.unitPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                                        <button
+                                            className="btn btn-sm btn-ghost-danger ms-2 p-0"
+                                            onClick={() => setSelectedItems(prev => prev.filter(s => s.id !== item.id))}
+                                        >
+                                            <i className="ti ti-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <hr className="my-2" />
+                        <div className="d-flex justify-content-between">
+                            <strong>ยอดรวม</strong>
+                            <strong className="text-primary fs-4">฿{getSelectedTotal().toLocaleString('th-TH', { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+        </MainLayout>
+    )
+}

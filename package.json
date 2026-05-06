@@ -4,14 +4,35 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "check": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" infra/check-health.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@prisma/client": "^6.19.2",
+    "@types/react-datepicker": "^6.2.0",
+    "bcryptjs": "^3.0.3",
+    "chart.js": "^4.5.1",
+    "date-fns": "^4.1.0",
+    "decimal.js": "^10.6.0",
     "next": "16.1.4",
+    "next-auth": "^5.0.0-beta.30",
+    "pino": "^10.2.1",
+    "promptpay-qr": "^0.5.0",
+    "qrcode.react": "^4.2.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-chartjs-2": "^5.3.1",
+    "react-datepicker": "^9.1.0",
+    "react-dom": "19.2.3",
+    "react-hook-form": "^7.71.1",
+    "react-hot-toast": "^2.6.0",
+    "sweetalert2": "^11.26.17",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -21,6 +42,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
