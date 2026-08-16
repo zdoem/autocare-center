@@ -131,9 +131,9 @@ export function Step1Search({ onNext, onBack }: StepComponentProps) {
                                                     </span>
                                                 </div>
                                                 <div className="col">
-                                                    <div className="d-flex justify-content-between">
+                                                    <div className="d-flex justify-content-between align-items-center">
                                                         <strong>{result.car?.licensePlate}</strong>
-                                                        <span className="badge bg-blue">
+                                                        <span className="badge bg-blue text-white fw-medium">
                                                             {result.car?.brand} {result.car?.model}
                                                         </span>
                                                     </div>

@@ -295,8 +295,13 @@ export default function OpsReceivePage() {
                                                     <div className="row align-items-center">
                                                         <div className="col-auto"><span className="avatar bg-blue-lt"><i className="ti ti-car"></i></span></div>
                                                         <div className="col">
-                                                            <div className="d-flex justify-content-between"><strong>{result.licensePlate} {result.province || ''}</strong><span className="badge bg-blue">{result.carBrand.nameThai || result.carBrand.nameEnglish} {result.carModel.name}</span></div>
-                                                            <div className="text-muted small">{result.customer.fullName} | {result.customer.phone}</div>
+                                                            <div className="d-flex justify-content-between align-items-center">
+                                                                <strong>{result.licensePlate} {result.province || ''}</strong>
+                                                                <span className="badge bg-blue text-white fw-medium">
+                                                                    {result.carBrand?.nameThai || result.carBrand?.nameEnglish || '-'} {result.carModel?.name || ''}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-muted small">{result.customer?.fullName || '-'} | {result.customer?.phone || '-'}</div>
                                                         </div>
                                                         <div className="col-auto"><i className="ti ti-chevron-right"></i></div>
                                                     </div>
