@@ -38,17 +38,29 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
     // Auto-expand parent menu when pathname matches any child link
     useEffect(() => {
         navItems.forEach(item => {
-            if (item.children?.some(child => pathname === child.href || (child.href !== '/' && pathname.startsWith(child.href)))) {
+            if (item.children?.some(child => {
+                if (child.href === pathname) return true
+                if (child.href === '/dashboard' || child.href === '/') return false
+                return pathname.startsWith(`${child.href}/`)
+            })) {
                 setExpandedMenus(prev => (prev.includes(item.label) ? prev : [...prev, item.label]))
             }
         })
     }, [pathname, navItems])
 
-    const isActiveLink = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href))
+    const isActiveLink = (href: string) => {
+        if (pathname === href) return true
+        if (href === '/dashboard' || href === '/') return false
+        return pathname.startsWith(`${href}/`)
+    }
 
     const isActiveParent = (item: NavItem) => {
         if (item.children) {
-            return item.children.some(child => pathname === child.href || (child.href !== '/' && pathname.startsWith(child.href)))
+            return item.children.some(child => {
+                if (child.href === pathname) return true
+                if (child.href === '/dashboard' || child.href === '/') return false
+                return pathname.startsWith(`${child.href}/`)
+            })
         }
         return false
     }
