@@ -257,8 +257,61 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         }
     }
 
+    // Cancel item modal state
+    const [cancelModalItem, setCancelModalItem] = useState<{ id: string; name: string } | null>(null)
+    const [cancelReasonPreset, setCancelReasonPreset] = useState<string>('ลูกค้าขอยกเลิก / เลื่อนการซ่อม')
+    const [cancelReasonCustom, setCancelReasonCustom] = useState<string>('')
+    const [cancelling, setCancelling] = useState(false)
+
+    const handleConfirmCancelItem = async () => {
+        if (!cancelModalItem) return
+        const reason = cancelReasonPreset === 'OTHER' ? cancelReasonCustom.trim() : cancelReasonPreset
+        if (!reason) {
+            showError('กรุณาระบุเหตุผลในการยกเลิก')
+            return
+        }
+
+        setCancelling(true)
+        try {
+            const res = await fetch(`/api/ops/job-item/${cancelModalItem.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'CANCEL', reason })
+            })
+            if (res.ok) {
+                showSuccess('ยกเลิกรายการเรียบร้อยแล้ว')
+                setCancelModalItem(null)
+                fetchJob()
+            } else {
+                showError('ไม่สามารถยกเลิกรายการได้')
+            }
+        } catch (e) {
+            showError('เกิดข้อผิดพลาดในการยกเลิกรายการ')
+        } finally {
+            setCancelling(false)
+        }
+    }
+
+    const handleRestoreItem = async (itemId: string) => {
+        try {
+            const res = await fetch(`/api/ops/job-item/${itemId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'RESTORE' })
+            })
+            if (res.ok) {
+                showSuccess('นำรายการกลับมาเรียบร้อยแล้ว')
+                fetchJob()
+            } else {
+                showError('ไม่สามารถนำรายการกลับมาได้')
+            }
+        } catch (e) {
+            showError('เกิดข้อผิดพลาด')
+        }
+    }
+
     const handleDeleteItem = async (itemId: string) => {
-        if (!confirm('ลบรายการนี้?')) return
+        if (!confirm('ลบรายการนี้ถาวร?')) return
         try {
             const res = await fetch(`/api/ops/job-item/${itemId}`, { method: 'DELETE' })
             if (res.ok) {
@@ -312,6 +365,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const serviceItems = job.items.filter(item => item.itemType === 'SERVICE')
     const spareItems = job.items.filter(item => item.itemType === 'SPARE')
     const isReadOnly = job.status === 'COMPLETED' || job.status === 'DELIVERED' || job.status === 'CANCELLED'
+    const hasRevisions = job.items.some(item => item.isModified)
 
     return (
         <MainLayout
@@ -353,6 +407,22 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                         </div>
                     </div>
                     <span className="badge bg-secondary text-white">ยกเลิกแล้ว</span>
+                </div>
+            )}
+
+            {/* Dynamic Revision Alert */}
+            {hasRevisions && !isReadOnly && (
+                <div className="p-3 mb-3 bg-warning-lt text-warning rounded-3 border border-warning-subtle d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                        <i className="ti ti-alert-triangle fs-2 me-2"></i>
+                        <div>
+                            <strong className="text-dark">ใบงานนี้มีการยกเลิก/ปรับปรุงรายการ (Revised Quotation)</strong>
+                            <div className="small text-muted">ขอบเขตงานหรือยอดเงินมีการเปลี่ยนแปลง กรุณาพิมพ์ใบเสนอราคาฉบับแก้ไขให้ลูกค้ายืนยัน</div>
+                        </div>
+                    </div>
+                    <button className="btn btn-warning btn-sm text-dark fw-bold shadow-sm" onClick={() => window.open(`/ops/job/print/${job.id}?type=quotation`, '_blank')}>
+                        <i className="ti ti-printer me-1"></i>พิมพ์ใบเสนอราคาฉบับแก้ไข
+                    </button>
                 </div>
             )}
 
@@ -435,28 +505,73 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         <th className="text-end">ราคา/หน่วย</th>
                                         <th className="text-center">จำนวน</th>
                                         <th className="text-end">รวม</th>
-                                        {!isReadOnly && <th style={{ width: '50px' }}></th>}
+                                        {!isReadOnly && <th className="text-end" style={{ width: '120px' }}>การจัดการ</th>}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {serviceItems.length === 0 ? (
                                         <tr><td colSpan={isReadOnly ? 4 : 5} className="text-center text-muted py-3">ยังไม่มีรายการ</td></tr>
                                     ) : (
-                                        serviceItems.map(item => (
-                                            <tr key={item.id}>
-                                                <td><div className="fw-medium">{item.description}</div></td>
-                                                <td className="text-end">฿{Number(item.unitPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                                                <td className="text-center">{item.quantity}</td>
-                                                <td className="text-end">฿{Number(item.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                                                {!isReadOnly && (
+                                        serviceItems.map(item => {
+                                            const isCancelled = item.isModified && Number(item.total) === 0
+                                            return (
+                                                <tr key={item.id} className={isCancelled ? 'bg-light text-muted' : ''}>
                                                     <td>
-                                                        <a href="#" className="btn btn-ghost-danger btn-icon btn-sm" onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}>
-                                                            <i className="ti ti-trash"></i>
-                                                        </a>
+                                                        <div className="fw-medium">
+                                                            {isCancelled ? (
+                                                                <span className="text-decoration-line-through">{item.description}</span>
+                                                            ) : (
+                                                                item.description
+                                                            )}
+                                                            {isCancelled && (
+                                                                <span className="badge bg-secondary text-white ms-2">ยกเลิกแล้ว</span>
+                                                            )}
+                                                        </div>
+                                                        {isCancelled && item.modifiedReason && (
+                                                            <div className="small text-danger mt-1">
+                                                                <i className="ti ti-info-circle me-1"></i>เหตุผล: {item.modifiedReason}
+                                                            </div>
+                                                        )}
                                                     </td>
-                                                )}
-                                            </tr>
-                                        ))
+                                                    <td className="text-end">฿{Number(item.unitPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                                    <td className="text-center">{item.quantity}</td>
+                                                    <td className="text-end fw-bold">฿{Number(item.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                                    {!isReadOnly && (
+                                                        <td className="text-end text-nowrap">
+                                                            {isCancelled ? (
+                                                                <button
+                                                                    className="btn btn-ghost-primary btn-sm me-1"
+                                                                    title="นำรายการกลับมาทำต่อ"
+                                                                    onClick={() => handleRestoreItem(item.id)}
+                                                                >
+                                                                    <i className="ti ti-rotate me-1"></i>นำกลับมา
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    className="btn btn-outline-danger btn-sm me-1"
+                                                                    title="ยกเลิกรายการนี้ (ระบุเหตุผล)"
+                                                                    onClick={() => {
+                                                                        setCancelModalItem({ id: item.id, name: item.description })
+                                                                        setCancelReasonPreset('ลูกค้าขอยกเลิก / เลื่อนการซ่อม')
+                                                                        setCancelReasonCustom('')
+                                                                    }}
+                                                                >
+                                                                    <i className="ti ti-x me-1"></i>ยกเลิก
+                                                                </button>
+                                                            )}
+                                                            <a
+                                                                href="#"
+                                                                className="btn btn-ghost-danger btn-icon btn-sm"
+                                                                title="ลบทิ้งถาวร"
+                                                                onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}
+                                                            >
+                                                                <i className="ti ti-trash"></i>
+                                                            </a>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            )
+                                        })
                                     )}
                                 </tbody>
                             </table>
@@ -483,28 +598,73 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         <th className="text-end">ราคา/หน่วย</th>
                                         <th className="text-center">จำนวน</th>
                                         <th className="text-end">รวม</th>
-                                        {!isReadOnly && <th style={{ width: '50px' }}></th>}
+                                        {!isReadOnly && <th className="text-end" style={{ width: '120px' }}>การจัดการ</th>}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {spareItems.length === 0 ? (
                                         <tr><td colSpan={isReadOnly ? 4 : 5} className="text-center text-muted py-3">ยังไม่มีรายการอะไหล่</td></tr>
                                     ) : (
-                                        spareItems.map(item => (
-                                            <tr key={item.id}>
-                                                <td><div className="fw-medium">{item.description}</div></td>
-                                                <td className="text-end">฿{Number(item.unitPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                                                <td className="text-center">{item.quantity}</td>
-                                                <td className="text-end">฿{Number(item.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                                                {!isReadOnly && (
+                                        spareItems.map(item => {
+                                            const isCancelled = item.isModified && Number(item.total) === 0
+                                            return (
+                                                <tr key={item.id} className={isCancelled ? 'bg-light text-muted' : ''}>
                                                     <td>
-                                                        <a href="#" className="btn btn-ghost-danger btn-icon btn-sm" onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}>
-                                                            <i className="ti ti-trash"></i>
-                                                        </a>
+                                                        <div className="fw-medium">
+                                                            {isCancelled ? (
+                                                                <span className="text-decoration-line-through">{item.description}</span>
+                                                            ) : (
+                                                                item.description
+                                                            )}
+                                                            {isCancelled && (
+                                                                <span className="badge bg-secondary text-white ms-2">ยกเลิกแล้ว</span>
+                                                            )}
+                                                        </div>
+                                                        {isCancelled && item.modifiedReason && (
+                                                            <div className="small text-danger mt-1">
+                                                                <i className="ti ti-info-circle me-1"></i>เหตุผล: {item.modifiedReason}
+                                                            </div>
+                                                        )}
                                                     </td>
-                                                )}
-                                            </tr>
-                                        ))
+                                                    <td className="text-end">฿{Number(item.unitPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                                    <td className="text-center">{item.quantity}</td>
+                                                    <td className="text-end fw-bold">฿{Number(item.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                                    {!isReadOnly && (
+                                                        <td className="text-end text-nowrap">
+                                                            {isCancelled ? (
+                                                                <button
+                                                                    className="btn btn-ghost-primary btn-sm me-1"
+                                                                    title="นำรายการกลับมาทำต่อ"
+                                                                    onClick={() => handleRestoreItem(item.id)}
+                                                                >
+                                                                    <i className="ti ti-rotate me-1"></i>นำกลับมา
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    className="btn btn-outline-danger btn-sm me-1"
+                                                                    title="ยกเลิกรายการนี้ (ระบุเหตุผล)"
+                                                                    onClick={() => {
+                                                                        setCancelModalItem({ id: item.id, name: item.description })
+                                                                        setCancelReasonPreset('ลูกค้าขอยกเลิก / เลื่อนการซ่อม')
+                                                                        setCancelReasonCustom('')
+                                                                    }}
+                                                                >
+                                                                    <i className="ti ti-x me-1"></i>ยกเลิก
+                                                                </button>
+                                                            )}
+                                                            <a
+                                                                href="#"
+                                                                className="btn btn-ghost-danger btn-icon btn-sm"
+                                                                title="ลบทิ้งถาวร"
+                                                                onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}
+                                                            >
+                                                                <i className="ti ti-trash"></i>
+                                                            </a>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            )
+                                        })
                                     )}
                                 </tbody>
                             </table>
@@ -953,6 +1113,87 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     </div>
                 )}
             </Modal>
+
+            {/* Modal for Item Cancellation Reason */}
+            {cancelModalItem && (
+                <>
+                    <div className="modal-backdrop fade show"></div>
+                    <div className="modal modal-blur fade show d-block" tabIndex={-1}>
+                        <div className="modal-dialog modal-dialog-centered">
+                            <div className="modal-content">
+                                <div className="modal-header bg-danger text-white">
+                                    <h5 className="modal-title"><i className="ti ti-alert-circle me-2"></i>ระบุสาเหตุการยกเลิกรายการ</h5>
+                                    <button type="button" className="btn-close btn-close-white" onClick={() => setCancelModalItem(null)}></button>
+                                </div>
+                                <div className="modal-body">
+                                    <div className="mb-3">
+                                        <label className="form-label text-muted">รายการที่ต้องการยกเลิก:</label>
+                                        <div className="fw-bold fs-3 text-dark">{cancelModalItem.name}</div>
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label required">สาเหตุการยกเลิก</label>
+                                        <div className="form-selectgroup form-selectgroup-boxes d-flex flex-column gap-2">
+                                            {[
+                                                'ลูกค้าขอยกเลิก / เลื่อนการซ่อม',
+                                                'ตรวจเช็คแล้วยังไม่จำเป็นต้องเปลี่ยน',
+                                                'อะไหล่ขาดตลาด / สั่งไม่ได้',
+                                                'พบความเสียหายอื่นที่ต้องซ่อมจุดอื่นแทน',
+                                                'OTHER',
+                                            ].map((r) => (
+                                                <label key={r} className="form-selectgroup-item flex-fill">
+                                                    <input
+                                                        type="radio"
+                                                        name="cancelReason"
+                                                        value={r}
+                                                        className="form-selectgroup-input"
+                                                        checked={cancelReasonPreset === r}
+                                                        onChange={() => setCancelReasonPreset(r)}
+                                                    />
+                                                    <div className="form-selectgroup-label d-flex align-items-center p-3">
+                                                        <span className="me-3">
+                                                            <span className="form-selectgroup-check"></span>
+                                                        </span>
+                                                        <div>
+                                                            {r === 'OTHER' ? '📝 ระบุสาเหตุอื่นๆ...' : r}
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {cancelReasonPreset === 'OTHER' && (
+                                        <div className="mb-3">
+                                            <label className="form-label required">ระบุรายละเอียดสาเหตุ</label>
+                                            <textarea
+                                                className="form-control"
+                                                rows={3}
+                                                placeholder="กรอกเหตุผลที่ลูกค้ายกเลิก หรือช่างยกเลิกรายการนี้..."
+                                                value={cancelReasonCustom}
+                                                onChange={(e) => setCancelReasonCustom(e.target.value)}
+                                                autoFocus
+                                            ></textarea>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-link link-secondary" onClick={() => setCancelModalItem(null)}>
+                                        ปิด
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-danger"
+                                        disabled={cancelling || (cancelReasonPreset === 'OTHER' && !cancelReasonCustom.trim())}
+                                        onClick={handleConfirmCancelItem}
+                                    >
+                                        {cancelling ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="ti ti-check me-1"></i>}
+                                        ยืนยันยกเลิกรายการ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </MainLayout>
     )
 }

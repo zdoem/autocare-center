@@ -462,8 +462,8 @@ function PrintJobContent() {
                         </div>
                     </div>
                     <div className="doc-title-block">
-                        <h2>{docConf.titleTh}</h2>
-                        <p className="doc-subtitle">{docConf.titleEn}</p>
+                        <h2>{docConf.titleTh} {job.items?.some((i: any) => i.isModified) && docType === 'quotation' ? '(ฉบับปรับปรุงแก้ไข)' : ''}</h2>
+                        <p className="doc-subtitle">{docConf.titleEn} {job.items?.some((i: any) => i.isModified) && docType === 'quotation' ? '(Revised)' : ''}</p>
                         <p className="doc-meta">เลขที่: <strong>{job.quotationNo || job.jobNo}</strong></p>
                         <p className="doc-meta">วันที่: {fmtDate(job.quotationDate || job.jobDate)}</p>
                         {docConf.validDays > 0 && (
@@ -562,27 +562,39 @@ function PrintJobContent() {
                     </thead>
                     <tbody>
                         {job.items && job.items.length > 0 ? (
-                            job.items.map((item: any, i: number) => (
-                                <tr key={item.id}>
-                                    <td className="text-center">{i + 1}</td>
-                                    <td>
-                                        <span className="item-desc">{item.description}</span>
-                                    </td>
-                                    <td className="text-center">
-                                        <span className="item-type">
-                                            {item.itemType === 'SERVICE' ? 'บริการ' : 'อะไหล่'}
-                                        </span>
-                                    </td>
-                                    <td className="text-center">{Number(item.quantity || 0)}</td>
-                                    <td className="text-right">{fmtNumber(Number(item.unitPrice || 0))}</td>
-                                    <td className="text-right">
-                                        {Number(item.discount) > 0 ? fmtNumber(Number(item.discount)) : '-'}
-                                    </td>
-                                    <td className="text-right" style={{ fontWeight: 600 }}>
-                                        {fmtNumber(Number(item.total || 0))}
-                                    </td>
-                                </tr>
-                            ))
+                            job.items.map((item: any, i: number) => {
+                                const isCancelled = item.isModified && Number(item.total) === 0
+                                return (
+                                    <tr key={item.id} style={isCancelled ? { color: '#777', backgroundColor: '#fafafa' } : {}}>
+                                        <td className="text-center">{i + 1}</td>
+                                        <td>
+                                            {isCancelled ? (
+                                                <div>
+                                                    <span style={{ textDecoration: 'line-through' }}>{item.description}</span>
+                                                    <span style={{ color: '#d9534f', fontSize: '8.5pt', marginLeft: '6px', fontWeight: 500 }}>
+                                                        (ยกเลิก: {item.modifiedReason || 'ลูกค้ายกเลิก'})
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="item-desc">{item.description}</span>
+                                            )}
+                                        </td>
+                                        <td className="text-center">
+                                            <span className="item-type">
+                                                {item.itemType === 'SERVICE' ? 'บริการ' : 'อะไหล่'}
+                                            </span>
+                                        </td>
+                                        <td className="text-center">{Number(item.quantity || 0)}</td>
+                                        <td className="text-right">{fmtNumber(Number(item.unitPrice || 0))}</td>
+                                        <td className="text-right">
+                                            {Number(item.discount) > 0 ? fmtNumber(Number(item.discount)) : '-'}
+                                        </td>
+                                        <td className="text-right" style={{ fontWeight: 600 }}>
+                                            {fmtNumber(Number(item.total || 0))}
+                                        </td>
+                                    </tr>
+                                )
+                            })
                         ) : (
                             <tr className="empty-row">
                                 <td colSpan={7}>— ไม่มีรายการ —</td>
