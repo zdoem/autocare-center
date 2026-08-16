@@ -419,7 +419,6 @@ export default function ServiceJobsPage() {
                                             style={{ cursor: 'pointer' }}
                                             onClick={() => router.push(`/ops/job/${job.id}`)}
                                         >
-                                            <div className={`card-status-start bg-${statusInfo.color}`}></div>
                                             <div className="card-body">
                                                 {/* Header: Status Badge + Job No + Menu */}
                                                 <div className="d-flex justify-content-between align-items-start mb-3">

@@ -68,3 +68,28 @@ body {
   background-color: #64748b !important;
   color: #ffffff !important;
 }
+
+/* =========================================================
+   Universal Clean Borders: Remove all left-border stripes
+   and highlight bars across the entire system
+   ========================================================= */
+.alert {
+  border-left-width: 1px !important;
+}
+
+.alert-success,
+.alert-info,
+.alert-warning,
+.alert-danger,
+.alert-primary,
+.alert-secondary,
+.alert-azure {
+  border-left-width: 1px !important;
+}
+
+.card-status-start,
+.card-status-top,
+.card-status-bottom,
+.card-status-end {
+  display: none !important;
+}
