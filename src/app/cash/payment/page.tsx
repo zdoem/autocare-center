@@ -53,6 +53,53 @@ const formatMoney = (amount: number | string) => {
     return Number(amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })
 }
 
+const CARD_BRANDS = [
+    {
+        id: 'Visa',
+        name: 'Visa',
+        icon: (
+            <svg width="34" height="22" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="me-2 flex-shrink-0">
+                <rect width="36" height="24" rx="3" fill="#1A1F71"/>
+                <text x="18" y="16" fill="#ffffff" fontSize="11" fontWeight="bold" fontStyle="italic" textAnchor="middle" fontFamily="sans-serif">VISA</text>
+            </svg>
+        )
+    },
+    {
+        id: 'Mastercard',
+        name: 'Mastercard',
+        icon: (
+            <svg width="34" height="22" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="me-2 flex-shrink-0">
+                <rect width="36" height="24" rx="3" fill="#252525"/>
+                <circle cx="14" cy="12" r="7" fill="#EB001B"/>
+                <circle cx="22" cy="12" r="7" fill="#F79E1B" fillOpacity="0.85"/>
+            </svg>
+        )
+    },
+    {
+        id: 'JCB',
+        name: 'JCB',
+        icon: (
+            <svg width="34" height="22" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="me-2 flex-shrink-0">
+                <rect width="36" height="24" rx="3" fill="#ffffff" stroke="#cbd5e1"/>
+                <rect x="5" y="4" width="7" height="16" rx="2" fill="#006CB7"/>
+                <rect x="14" y="4" width="7" height="16" rx="2" fill="#E60012"/>
+                <rect x="23" y="4" width="7" height="16" rx="2" fill="#008837"/>
+                <text x="18" y="15" fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">JCB</text>
+            </svg>
+        )
+    },
+    {
+        id: 'UnionPay',
+        name: 'UnionPay',
+        icon: (
+            <svg width="34" height="22" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="me-2 flex-shrink-0">
+                <rect width="36" height="24" rx="3" fill="#005B82"/>
+                <text x="18" y="15" fill="#ffffff" fontSize="7.5" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">UnionPay</text>
+            </svg>
+        )
+    }
+]
+
 function PaymentContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -389,24 +436,46 @@ function PaymentContent() {
                                     </ul>
 
                                     {creditMode === 'edc' ? (
-                                        <div className="row">
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">ประเภทบัตร</label>
-                                                <select className="form-select" value={creditForm.cardType} onChange={(e) => setCreditForm({ ...creditForm, cardType: e.target.value })}>
-                                                    <option>Visa</option>
-                                                    <option>Mastercard</option>
-                                                    <option>JCB</option>
-                                                </select>
+                                        <div>
+                                            <div className="mb-3">
+                                                <label className="form-label required">ประเภทบัตร (Card Type)</label>
+                                                <div className="row g-2">
+                                                    {CARD_BRANDS.map(brand => {
+                                                        const isSelected = creditForm.cardType === brand.id
+                                                        return (
+                                                            <div key={brand.id} className="col-6 col-sm-3">
+                                                                <button
+                                                                    type="button"
+                                                                    className={`btn w-100 d-flex align-items-center justify-content-center py-2 ${
+                                                                        isSelected ? 'btn-primary shadow-sm' : 'btn-outline-secondary bg-white'
+                                                                    }`}
+                                                                    onClick={() => setCreditForm({ ...creditForm, cardType: brand.id })}
+                                                                >
+                                                                    {brand.icon}
+                                                                    <span className="fw-bold">{brand.name}</span>
+                                                                </button>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
                                             </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label required">เลขอ้างอิง (Ref No.)</label>
-                                                <input 
-                                                    type="text" 
-                                                    className="form-control" 
-                                                    placeholder="Reference No. จากเครื่องรูด"
-                                                    value={creditForm.reference}
-                                                    onChange={(e) => setCreditForm({ ...creditForm, reference: e.target.value })}
-                                                />
+                                            <div className="row">
+                                                <div className="col-md-12 mb-3">
+                                                    <label className="form-label required">เลขอ้างอิงจากสลิปเครื่องรูด (EDC Ref No. / Approval Code)</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text bg-light">
+                                                            {CARD_BRANDS.find(b => b.id === creditForm.cardType)?.icon}
+                                                            <span className="fw-medium ms-1">{creditForm.cardType}</span>
+                                                        </span>
+                                                        <input 
+                                                            type="text" 
+                                                            className="form-control" 
+                                                            placeholder="เช่น Ref No. หรือ Approval Code จากสลิป"
+                                                            value={creditForm.reference}
+                                                            onChange={(e) => setCreditForm({ ...creditForm, reference: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
