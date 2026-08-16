@@ -18,7 +18,7 @@ export default async function AdminDashboardPage() {
     }
 
     return (
-        <MainLayout title="Admin Dashboard" pretitle="ภาพรวม">
+        <MainLayout title={<><i className="ti ti-chart-pie me-2"></i>Admin Dashboard</>} pretitle="ภาพรวม">
             {/* Summary Cards */}
             <div className="row row-deck row-cards">
                 <div className="col-sm-6 col-lg-3">
