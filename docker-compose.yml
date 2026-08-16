@@ -11,44 +11,46 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://pgadmin:P%40ssw0rd@db:5432/db_autocar?schema=public
+      - DATABASE_URL=mysql://root:P%40ssw0rd@db:3306/db_autocar
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=autocar-super-secret-key-2026
     depends_on:
       db:
         condition: service_healthy
 
-  # 2. PostgreSQL 15 Database
+  # 2. MariaDB 11.8 Database
   db:
-    image: postgres:15-alpine
-    container_name: autocare_db
+    image: mariadb:11.8
+    container_name: autocare_mariadb
     restart: always
     environment:
-      POSTGRES_USER: pgadmin
-      POSTGRES_PASSWORD: P@ssw0rd
-      POSTGRES_DB: db_autocar
+      MYSQL_ROOT_PASSWORD: P@ssw0rd
+      MYSQL_DATABASE: db_autocar
+      MYSQL_USER: autocare
+      MYSQL_PASSWORD: P@ssw0rd
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mariadb_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pgadmin -d db_autocar"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
-  # 3. pgAdmin 4 (Database Management Web GUI)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: autocare_pgadmin
+  # 3. phpMyAdmin (Database Management Web GUI)
+  phpmyadmin:
+    image: phpmyadmin:5.2.2-apache
+    container_name: autocare_phpmyadmin
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: P@ssw0rd
+      PMA_HOST: db
+      PMA_PORT: 3306
     ports:
-      - "5050:80"
+      - "8080:80"
     depends_on:
       - db
 
 volumes:
-  postgres_data:
+  mariadb_data:
+    name: autocare_mariadb_data

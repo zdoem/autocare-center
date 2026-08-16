@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
         if (statusCode) where.statusCode = statusCode
         if (search) {
             where.OR = [
-                { endpoint: { contains: search, mode: 'insensitive' } },
-                { ipAddress: { contains: search, mode: 'insensitive' } },
-                { errorMessage: { contains: search, mode: 'insensitive' } },
+                { endpoint: { contains: search } },
+                { ipAddress: { contains: search } },
+                { errorMessage: { contains: search } },
             ]
         }
 

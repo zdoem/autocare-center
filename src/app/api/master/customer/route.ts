@@ -42,10 +42,10 @@ export async function GET(request: NextRequest) {
 
         if (search) {
             where.OR = [
-                { fullName: { contains: search, mode: 'insensitive' } },
+                { fullName: { contains: search } },
                 { phone: { contains: search } },
-                { email: { contains: search, mode: 'insensitive' } },
-                { code: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search } },
+                { code: { contains: search } },
             ]
         }
 

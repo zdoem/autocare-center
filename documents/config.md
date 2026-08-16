@@ -17,11 +17,11 @@
 
 ---
 
-## 🗄️ 2. การตั้งค่าฐานข้อมูล (Database Configuration)
-- **Database Engine:** PostgreSQL
-- **Connection URL:** `postgresql://pgadmin:P@ssw0rd@localhost:5432/db_autocar`
-- **Prisma Schema:** `prisma/schema.prisma`
-- **Port:** `5432` (Start ผ่าน Docker Container หรือ PostgreSQL Local Service)
+## 🗄️ 2. การตั้งค่าฐานข้อมูล (Database Configuration - MariaDB 11.8)
+- **Database Engine:** MariaDB 11.8 (Docker container `autocare_mariadb` พร้อม Volume `autocare_mariadb_data`)
+- **Connection URL:** `mysql://root:P@ssw0rd@localhost:3306/db_autocar`
+- **Prisma Schema:** `prisma/schema.prisma` (`provider = "mysql"`)
+- **Port:** `3306` (MariaDB), `8080` (phpMyAdmin Web GUI)
 
 ---
 
@@ -54,15 +54,6 @@ npx ts-node prisma/check_data.ts
 
 # 5. เปิด Prisma Studio เพื่อจัดการข้อมูลผ่าน GUI
 npx prisma studio
-
-# 6. รัน E2E Test ทั้งหมดด้วย Playwright
-npx playwright test
-
-# 7. รัน E2E Test เฉพาะ Chromium (Authenticated)
-npx playwright test --project=chromium
-
-# 8. รัน E2E Test เฉพาะไฟล์ที่ต้องการ
-npx playwright test tests/e2e/auth/login.spec.ts
 ```
 
 ---
@@ -88,45 +79,3 @@ npx playwright test tests/e2e/auth/login.spec.ts
 | **Payment Types** | 6 วิธี | เงินสด, โอนเงิน, QR PromptPay, บัตรเครดิต, บัตรเดบิต, เครดิต (วางบิล) |
 | **Maintenance Templates** | 3 เทมเพลต | บำรุงรักษา 10,000 km, 20,000 km, 40,000 km |
 | **Service Jobs** | 1 งาน | `SJ-2026-0001` (มี Labor, QC, Media, Quotation, Recommendations, Reminders) |
-
----
-
-## 🗺️ 6. แผนผัง URL & API Endpoints สำคัญ
-
-### 🌐 หน้าระบบ (Pages)
-- **Login / Auth:** `/login`, `/forgot-password`, `/reset-password`
-- **Dashboard:** `/dashboard`, `/dashboard-admin`, `/dashboard-cashier`, `/dashboard-technician`
-- **Master Customers:** `/master/customer`, `/master/customer-type`, `/master/customer/[id]`
-- **Master Vehicles:** `/master/car-brand`, `/master/car-model`, `/master/car`
-- **Master Services & Spares:** `/master/service-category`, `/master/service`, `/master/spares-category`, `/master/spare`, `/master/vendor`
-- **Master HR:** `/master/department`, `/master/position`, `/master/employee-type`, `/master/employee`
-- **Operations & Billing:** `/ops/receive`, `/ops/search`, `/ops/job`, `/ops/billing`, `/ops/cash-receipt`, `/cash/pending`, `/cash/daily`
-- **Inventory:** `/inventory/stock`, `/inventory/po`, `/inventory/receive`, `/inventory/movements`, `/inventory/alerts`
-- **Reports (Module 11):** `/reports`, `/reports/daily-sales`, `/reports/monthly-sales`, `/reports/services`, `/reports/spares`, `/reports/technician-performance`, `/reports/customer-history`, `/reports/debtor-aging`, `/reports/tax-invoice-summary`, `/reports/car-brand-model`, `/reports/job-status`, `/reports/followup`, `/reports/repeat-customer`
-- **Settings (Module 12):** `/settings`
-
----
-
-## 🧪 7. สรุปสถานะการทดสอบระบบ E2E (Playwright E2E Testing Summary)
-
-โครงสร้างไฟล์ทดสอบถูกจัดไว้อย่างเป็นระเบียบในโฟลเดอร์ `tests/`:
-
-```
-tests/
-├── fixtures/
-│   ├── auth.setup.ts          ← Global auth state setup (บันทึก token ไว้ที่ tests/.auth/admin.json)
-│   ├── test-helpers.ts        ← Shared UI interaction helpers (Modal, Swal, Toast)
-│   └── test-data.ts           ← Dynamic Test Data Generator
-└── e2e/
-    ├── auth/                  ← Login & Forgot Password (PASS 100%)
-    ├── dashboard/             ← Admin, Cashier, Technician Dashboards (PASS 100%)
-    ├── master/                ← 16 Master Data CRUD Pages (Table Pass 100%, Modal tuned)
-    ├── ops/                   ← Job Workflow, Register, Search (Tuned & Ready)
-    ├── cash/                  ← Payment & Daily Cash Reports (PASS 100%)
-    ├── inventory/             ← Stock, PO, Receive, Movements, Alerts (PASS 100%)
-    ├── reports/               ← 13 Reports pages (PASS 100%)
-    └── settings/              ← System Settings (PASS 100%)
-```
-
----
-*บันทึกข้อมูลล่าสุด: 15 สิงหาคม 2026*

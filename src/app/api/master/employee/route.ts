@@ -31,11 +31,11 @@ export async function GET(request: NextRequest) {
 
         if (search) {
             where.OR = [
-                { code: { contains: search, mode: 'insensitive' } },
-                { name: { contains: search, mode: 'insensitive' } },
-                { nickname: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-                { phone: { contains: search, mode: 'insensitive' } },
+                { code: { contains: search } },
+                { name: { contains: search } },
+                { nickname: { contains: search } },
+                { email: { contains: search } },
+                { phone: { contains: search } },
             ]
         }
 

@@ -21,12 +21,12 @@ export async function GET(request: NextRequest) {
 
         if (q) {
             where.OR = [
-                { licensePlate: { contains: q, mode: 'insensitive' } },
-                { code: { contains: q, mode: 'insensitive' } },
-                { customer: { fullName: { contains: q, mode: 'insensitive' } } },
+                { licensePlate: { contains: q } },
+                { code: { contains: q } },
+                { customer: { fullName: { contains: q } } },
                 { customer: { phone: { contains: q } } },
-                { customer: { firstName: { contains: q, mode: 'insensitive' } } },
-                { customer: { lastName: { contains: q, mode: 'insensitive' } } },
+                { customer: { firstName: { contains: q } } },
+                { customer: { lastName: { contains: q } } },
             ]
         }
 

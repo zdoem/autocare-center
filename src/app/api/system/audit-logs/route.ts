@@ -31,10 +31,10 @@ export async function GET(request: NextRequest) {
         }
         if (search) {
             where.OR = [
-                { entityCode: { contains: search, mode: 'insensitive' } },
-                { userName: { contains: search, mode: 'insensitive' } },
-                { userEmail: { contains: search, mode: 'insensitive' } },
-                { ipAddress: { contains: search, mode: 'insensitive' } },
+                { entityCode: { contains: search } },
+                { userName: { contains: search } },
+                { userEmail: { contains: search } },
+                { ipAddress: { contains: search } },
             ]
         }
 

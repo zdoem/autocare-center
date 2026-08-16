@@ -14,12 +14,12 @@ export async function GET(request: NextRequest) {
         const where: any = {}
         if (search) {
             where.OR = [
-                { fullName: { contains: search, mode: 'insensitive' } },
+                { fullName: { contains: search } },
                 { phone: { contains: search } },
-                { code: { contains: search, mode: 'insensitive' } }
+                { code: { contains: search } }
             ]
         }
-        if (customerType) where.customerType = { name: { contains: customerType, mode: 'insensitive' } }
+        if (customerType) where.customerType = { name: { contains: customerType } }
 
         const [customers, total] = await Promise.all([
             prisma.customer.findMany({

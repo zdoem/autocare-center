@@ -28,16 +28,16 @@ function checkConnection(host: string, port: number) {
 }
 
 // Parse DATABASE_URL
-// postgresql://postgres:postgres@localhost:5432/autocare_db?schema=public
+// mysql://root:P@ssw0rd@localhost:3306/db_autocar or postgresql://...
 function parseDbUrl(url: string) {
     try {
-        const match = url.match(/postgresql:\/\/.*@(.*):(\d+)\/.*$/)
+        const match = url.match(/(?:mysql|postgresql):\/\/.*@(.*):(\d+)\/.*$/)
         if (match) {
             return { host: match[1], port: parseInt(match[2]) }
         }
-        return { host: 'localhost', port: 5432 } // Default fallback
+        return { host: 'localhost', port: 3306 } // Default fallback
     } catch (e) {
-        return { host: 'localhost', port: 5432 }
+        return { host: 'localhost', port: 3306 }
     }
 }
 
@@ -61,7 +61,7 @@ async function main() {
     } else {
         console.error('❌ INFRA: Database Service is UNREACHABLE')
         console.error('   👉 Check if Docker is running')
-        console.error('   👉 Check if Postgres container is up (port 5432)')
+        console.error('   👉 Check if MariaDB 11.8 container is up (port 3306)')
         process.exit(1)
     }
 

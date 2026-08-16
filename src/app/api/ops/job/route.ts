@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
 
         if (search) {
             where.OR = [
-                { jobNo: { contains: search, mode: 'insensitive' } },
-                { car: { licensePlate: { contains: search, mode: 'insensitive' } } },
-                { customer: { firstName: { contains: search, mode: 'insensitive' } } },
-                { customer: { phone: { contains: search, mode: 'insensitive' } } },
+                { jobNo: { contains: search } },
+                { car: { licensePlate: { contains: search } } },
+                { customer: { firstName: { contains: search } } },
+                { customer: { phone: { contains: search } } },
             ]
         }
 
