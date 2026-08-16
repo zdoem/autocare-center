@@ -66,7 +66,7 @@ export default async function TechnicianDashboardPage() {
     }
 
     return (
-        <MainLayout title={<><i className="ti ti-wrench me-2"></i>Technician Dashboard</>} pretitle={`สวัสดี ${userName}`}>
+        <MainLayout title={<><i className="ti ti-tools me-2"></i>Technician Dashboard</>} pretitle={`สวัสดี ${userName}`}>
             {/* Summary Cards */}
             <div className="row row-deck row-cards">
                 <div className="col-sm-6 col-lg-4">

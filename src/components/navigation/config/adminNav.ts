@@ -14,7 +14,7 @@ export const adminNavItems: NavItem[] = [
         icon: 'ti-layout-dashboard',
         children: [
             { label: 'Admin Dashboard', icon: 'ti-chart-pie', href: '/dashboard' },
-            { label: 'Technician Dashboard', icon: 'ti-wrench', href: '/dashboard/technician' },
+            { label: 'Technician Dashboard', icon: 'ti-tools', href: '/dashboard/technician' },
             { label: 'Cashier Dashboard', icon: 'ti-cash', href: '/dashboard/cashier' },
         ],
     },
