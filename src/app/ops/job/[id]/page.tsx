@@ -657,7 +657,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                 />
                                             </td>
                                             <td>
-                                                <span className="badge bg-muted">{item.code}</span>
+                                                <span className="badge bg-blue-lt text-blue font-monospace">{item.code || '-'}</span>
                                             </td>
                                             <td className="fw-medium">{item.name}</td>
                                             <td className="text-end">{Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
