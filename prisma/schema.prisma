@@ -832,3 +832,50 @@ model SystemSetting {
 
   @@map("system_settings")
 }
+
+// ============================================
+// 🛡️ AUDIT LOGS & SYSTEM OBSERVABILITY
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, CANCEL_ITEM, STATUS_CHANGE, PAYMENT, EXPORT, BACKUP
+  entity      String   // ServiceJob, ServiceJobItem, Spare, Payment, Customer, Car, Employee, Settings, Auth
+  entityId    String?
+  entityCode  String?  // e.g. JOB-202608-0013, SP014
+  details     Json?    // Detailed payload diff, before/after, reason
+  ipAddress   String?
+  userAgent   String?
+  userId      String?
+  userName    String?
+  userEmail   String?
+  userRole    String?
+  status      String   @default("SUCCESS") // SUCCESS, FAILED, WARNING
+  createdAt   DateTime @default(now())
+
+  @@index([action])
+  @@index([entity])
+  @@index([entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ApiUsageLog {
+  id           String   @id @default(cuid())
+  endpoint     String   // e.g. /api/master/spare, /api/ops/job/[id]
+  method       String   // GET, POST, PUT, DELETE, PATCH
+  statusCode   Int      // 200, 201, 400, 404, 500
+  responseTime Int      // Latency in milliseconds
+  ipAddress    String?
+  userAgent    String?
+  userId       String?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([endpoint])
+  @@index([method])
+  @@index([statusCode])
+  @@index([createdAt])
+  @@map("api_usage_logs")
+}

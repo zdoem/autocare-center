@@ -77,6 +77,8 @@ export const adminNavItems: NavItem[] = [
             { label: 'การสั่งซื้อ (PO)', icon: 'ti-truck', href: '/reports/purchase' },
             { label: 'ค่าใช้จ่าย/ต้นทุน', icon: 'ti-receipt-off', href: '/reports/expense' },
             { label: 'ลูกค้า Top', icon: 'ti-trophy', href: '/reports/top-customer' },
+            { label: 'Audit Logs', icon: 'ti-shield-lock', href: '/reports/audit-logs' },
+            { label: 'สถิติการใช้งาน API', icon: 'ti-activity', href: '/reports/api-usage' },
         ],
     },
     { label: 'ตั้งค่าระบบ', icon: 'ti-settings', href: '/settings' },

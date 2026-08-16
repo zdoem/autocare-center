@@ -13,8 +13,8 @@ export default auth((req) => {
     const { pathname } = req.nextUrl
     const isLoggedIn = !!req.auth
 
-    // Public paths ที่ไม่ต้อง authentication
-    const publicPaths = ['/login', '/forgot-password', '/reset-password', '/api/auth', '/api/master', '/api/ops']
+    // Public paths ที่ไม่ต้อง authentication หรือเป็น API endpoints
+    const publicPaths = ['/login', '/forgot-password', '/reset-password', '/api/']
     const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
 
     // ถ้าเป็น logged in user ที่พยายามเข้าหน้า /login -> redirect ไป /dashboard
