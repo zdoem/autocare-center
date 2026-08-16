@@ -22,6 +22,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th">
+      <head>
+        <link
+          href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css"
+          rel="stylesheet"
+        />
+        <link
+          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <SessionProvider>
           {children}

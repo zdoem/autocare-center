@@ -15,29 +15,9 @@ interface TablerHeadProps {
 }
 
 export default function TablerHead({ title }: TablerHeadProps) {
+    if (!title) return null
     return (
-        <>
-            {/* Page Title */}
-            {title && <title>{title} - Autocar Service Center</title>}
-
-            {/* Tabler CSS - ตรงตาม mockup */}
-            <link
-                href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css"
-                rel="stylesheet"
-            />
-
-            {/* Tabler Icons - ตรงตาม mockup */}
-            <link
-                href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"
-                rel="stylesheet"
-            />
-
-            {/* Google Fonts - Noto Sans Thai ตรงตาม mockup */}
-            <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Noto Sans Thai', sans-serif; }
-      `}</style>
-        </>
+        <title>{title} - Autocar Service Center</title>
     )
 }
 
