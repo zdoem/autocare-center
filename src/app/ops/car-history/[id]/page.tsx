@@ -9,22 +9,22 @@
 import { useState, useEffect } from 'react'
 import MainLayout from '@/components/layout/MainLayout'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { showSuccess, showError } from '@/components/ui'
 
-export default function CarHistoryPage({ params }: { params: { id: string } }) {
+export default function CarHistoryPage() {
     const router = useRouter()
-    const [id, setId] = useState<string>('')
+    const routeParams = useParams()
+    const carId = (routeParams?.id as string) || ''
     const [loading, setLoading] = useState(true)
     const [car, setCar] = useState<any>(null)
     const [history, setHistory] = useState<any[]>([])
 
     useEffect(() => {
-        Promise.resolve(params).then(p => {
-            setId(p.id)
-            fetchData(p.id)
-        })
-    }, [params])
+        if (carId) {
+            fetchData(carId)
+        }
+    }, [carId])
 
     const fetchData = async (carId: string) => {
         try {

@@ -9,7 +9,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import MainLayout from '@/components/layout/MainLayout'
 import { showError } from '@/components/ui'
 
@@ -112,20 +112,25 @@ const getStatusBadge = (status: string) => {
     }
 }
 
-export default function CarDetailPage({ params }: { params: { id: string } }) {
+export default function CarDetailPage() {
     const router = useRouter()
+    const routeParams = useParams()
+    const carId = (routeParams?.id as string) || ''
+
     const [car, setCar] = useState<CarDetail | null>(null)
     const [loading, setLoading] = useState(true)
     const [filterYear, setFilterYear] = useState('all')
 
     useEffect(() => {
-        fetchCarDetail()
-    }, [params.id])
+        if (carId) {
+            fetchCarDetail(carId)
+        }
+    }, [carId])
 
-    const fetchCarDetail = async () => {
+    const fetchCarDetail = async (id: string) => {
         setLoading(true)
         try {
-            const response = await fetch(`/api/master/car/${params.id}`)
+            const response = await fetch(`/api/master/car/${id}`)
             const data = await response.json()
 
             if (response.ok && data.id) {
@@ -159,13 +164,13 @@ export default function CarDetailPage({ params }: { params: { id: string } }) {
         return null
     }
 
-    // Calculate stats
-    const totalVisits = car._count.serviceJobs
-    const totalSpent = car.serviceJobs.reduce((sum, job) => sum + job.totalAmount, 0)
-    const unpaidJobs = car.serviceJobs.filter(job => !job.isPaid).length
-    const inProgressJobs = car.serviceJobs.filter(job =>
+    // Calculate stats safely
+    const totalVisits = car._count?.serviceJobs ?? car.serviceJobs?.length ?? 0
+    const totalSpent = car.serviceJobs?.reduce((sum, job) => sum + (Number(job.totalAmount) || 0), 0) ?? 0
+    const unpaidJobs = car.serviceJobs?.filter(job => !job.isPaid).length ?? 0
+    const inProgressJobs = car.serviceJobs?.filter(job =>
         ['PENDING', 'IN_PROGRESS', 'WAITING_PARTS'].includes(job.status.toUpperCase())
-    ).length
+    ).length ?? 0
 
     // Calculate maintenance schedule
     const currentMileage = car.mileage || 0
@@ -182,13 +187,14 @@ export default function CarDetailPage({ params }: { params: { id: string } }) {
     const inspectionRemaining = nextInspectionMileage - currentMileage
 
     // Filter service jobs by year
-    const years = [...new Set(car.serviceJobs.map(job => new Date(job.jobDate).getFullYear()))]
+    const serviceJobsList = car.serviceJobs || []
+    const years = [...new Set(serviceJobsList.map(job => new Date(job.jobDate).getFullYear()))]
     const filteredJobs = filterYear === 'all'
-        ? car.serviceJobs
-        : car.serviceJobs.filter(job => new Date(job.jobDate).getFullYear().toString() === filterYear)
+        ? serviceJobsList
+        : serviceJobsList.filter(job => new Date(job.jobDate).getFullYear().toString() === filterYear)
 
     // Calculate customer since (years)
-    const customerSince = new Date(car.customer.createdAt)
+    const customerSince = car.customer?.createdAt ? new Date(car.customer.createdAt) : new Date()
     const yearsSince = new Date().getFullYear() - customerSince.getFullYear()
 
     return (
