@@ -6,6 +6,12 @@ test.describe('Master Data - Customer', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/master/customer')
         await page.waitForLoadState('domcontentloaded')
+        if (page.url().includes('/login')) {
+            await page.fill('input[name="username"]', 'admin')
+            await page.fill('input[name="password"]', 'P@ssw0rd')
+            await page.click('button[type="submit"]')
+            await page.waitForURL('**/master/customer')
+        }
     })
 
     test('should display customer list table', async ({ page }) => {
