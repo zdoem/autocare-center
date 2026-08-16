@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { generateCode } from '@/lib/utils/codeGenerator'
 
 // Validation schema
 const customerSchema = z.object({
@@ -113,19 +114,7 @@ export async function POST(request: NextRequest) {
         const validatedData = customerSchema.parse(body)
 
         // Auto-generate code
-        const lastCustomer = await prisma.customer.findFirst({
-            orderBy: { code: 'desc' }
-        })
-
-        let newCode = 'C-0001'
-        if (lastCustomer?.code) {
-            // Try to extract number
-            const match = lastCustomer.code.match(/C-(\d+)/)
-            if (match && match[1]) {
-                const lastNum = parseInt(match[1])
-                newCode = `C-${String(lastNum + 1).padStart(4, '0')}`
-            }
-        }
+        const newCode = await generateCode('CUS-', 'customer', 3)
         console.log('Generating New Customer Code:', newCode)
 
         // Generate fullName

@@ -10,6 +10,42 @@ const customerTypeSchema = z.object({
     isActive: z.boolean().default(true),
 })
 
+// GET - Fetch customer type by ID
+export async function GET(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    try {
+        const customerType = await prisma.customerType.findUnique({
+            where: { id: params.id },
+            include: {
+                _count: {
+                    select: { customers: true }
+                }
+            }
+        })
+
+        if (!customerType) {
+            return NextResponse.json(
+                { success: false, error: 'ไม่พบข้อมูล' },
+                { status: 404 }
+            )
+        }
+
+        return NextResponse.json({
+            success: true,
+            data: customerType,
+        })
+    } catch (error) {
+        console.error('Error fetching customer type by ID:', error)
+        return NextResponse.json(
+            { success: false, error: 'ไม่สามารถดึงข้อมูลได้' },
+            { status: 500 }
+        )
+    }
+}
+
 // PUT - Update customer type
 export async function PUT(
     request: NextRequest,

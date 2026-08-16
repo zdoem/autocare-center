@@ -13,13 +13,13 @@ export const carSchema = z.object({
     province: z.string().optional().nullable(),
 
     carBrandId: z.string()
-        .cuid('รหัสยี่ห้อรถไม่ถูกต้อง'),
+        .min(1, 'รหัสยี่ห้อรถไม่ถูกต้อง'),
 
     carModelId: z.string()
-        .cuid('รหัสรุ่นรถไม่ถูกต้อง'),
+        .min(1, 'รหัสรุ่นรถไม่ถูกต้อง'),
 
     customerId: z.string()
-        .cuid('รหัสลูกค้าไม่ถูกต้อง'),
+        .min(1, 'รหัสลูกค้าไม่ถูกต้อง'),
 
     year: z.number()
         .int('ปีรถต้องเป็นจำนวนเต็ม')
@@ -71,14 +71,14 @@ export const carImageSchema = z.object({
  * สำหรับการค้นหารถและ filter
  */
 export const carSearchSchema = z.object({
-    search: z.string().optional(),
-    brandId: z.string().cuid().optional(),
-    customerId: z.string().cuid().optional(),
-    status: z.enum(['in-service', 'pending', 'normal', 'all']).optional(),
-    sortBy: z.enum(['code', 'licensePlate', 'brand', 'model', 'customer', 'lastService', 'createdAt']).default('createdAt'),
-    sortOrder: z.enum(['asc', 'desc']).default('desc'),
-    page: z.string().optional().transform(val => val ? parseInt(val) : 1),
-    limit: z.string().optional().transform(val => val ? parseInt(val) : 20),
+    search: z.string().optional().nullable(),
+    brandId: z.string().optional().nullable(),
+    customerId: z.string().optional().nullable(),
+    status: z.enum(['in-service', 'pending', 'normal', 'all']).optional().nullable(),
+    sortBy: z.enum(['code', 'licensePlate', 'brand', 'model', 'customer', 'lastService', 'createdAt']).optional().nullable().default('createdAt'),
+    sortOrder: z.enum(['asc', 'desc']).optional().nullable().default('desc'),
+    page: z.string().optional().nullable().transform(val => val ? parseInt(val) : 1),
+    limit: z.string().optional().nullable().transform(val => val ? parseInt(val) : 20),
 })
 
 // Type exports

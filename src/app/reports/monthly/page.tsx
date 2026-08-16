@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import MainLayout from '@/components/layout/MainLayout'
 import { showError } from '@/components/ui'
 
@@ -18,18 +18,22 @@ export default function ReportMonthlyPage() {
     const now = new Date()
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     const [month, setMonth] = useState(currentMonth)
+    const [reportType, setReportType] = useState('all')
     const [data, setData] = useState<MonthlyData | null>(null)
     const [loading, setLoading] = useState(true)
 
     const monthOptions = Array.from({ length: 12 }, (_, i) => {
-        const d = new Date(); d.setMonth(d.getMonth() - i)
+        const d = new Date()
+        d.setMonth(d.getMonth() - i)
         return {
             val: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
             label: d.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })
         }
     })
 
-    useEffect(() => { fetchData() }, [month])
+    useEffect(() => {
+        fetchData()
+    }, [month])
 
     const fetchData = async () => {
         try {
@@ -38,30 +42,112 @@ export default function ReportMonthlyPage() {
             const json = await res.json()
             if (json.success) setData(json.data)
             else showError('โหลดข้อมูลไม่สำเร็จ')
-        } catch { showError('เกิดข้อผิดพลาด') }
-        finally { setLoading(false) }
+        } catch {
+            showError('เกิดข้อผิดพลาด')
+        } finally {
+            setLoading(false)
+        }
     }
 
     const s = data?.summary
     const p = data?.proportions
     const totalProp = (p?.serviceTotal || 0) + (p?.partsTotal || 0) + (p?.laborTotal || 0) || 1
     const pct = (v: number) => Math.round((v / totalProp) * 100)
-    const monthLabel = monthOptions.find(o => o.val === month)?.label || month
+    const monthLabel = monthOptions.find((o) => o.val === month)?.label || month
+    const exportExcel = () => {
+        if (!data) return
+        const rows = [
+            ['วันที่', 'จำนวนงาน', 'ค่าบริการ', 'ค่าอะไหล่', 'ค่าแรง', 'รวม'],
+            ...data.dailyRows
+                .filter((r) => r.total > 0)
+                .map((r) => [
+                    new Date(r.date).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                    String(r.jobCount),
+                    String(r.serviceRevenue),
+                    String(r.partsRevenue),
+                    String(r.laborRevenue),
+                    String(r.total),
+                ]),
+            [
+                'รวมทั้งเดือน',
+                String(s?.totalJobs || 0),
+                String(p?.serviceTotal || 0),
+                String(p?.partsTotal || 0),
+                String(p?.laborTotal || 0),
+                String(s?.totalRevenue || 0),
+            ],
+        ]
+
+        const csv = rows
+            .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+            .join('\n')
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `monthly-report-${month}.csv`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+    }
+
+    const exportPdf = () => {
+        window.print()
+    }
 
     return (
-        <MainLayout title={<><i className="ti ti-report-analytics me-2"></i>รายงานสรุปรายเดือน</>} pretitle="รายงาน">
-            <div className="row align-items-center mb-3">
+        <MainLayout
+            title={<><i className="ti ti-report-analytics me-2"></i>รายงานสรุปรายเดือน</>}
+            pretitle="รายงาน"
+        >
+            <style jsx global>{`
+                @media print {
+                    .no-print {
+                        display: none !important;
+                    }
+
+                    .card {
+                        border: 1px solid #ddd !important;
+                    }
+                }
+            `}</style>
+
+            <div className="row align-items-center mb-3 no-print">
                 <div className="col-auto ms-auto btn-list">
-                    <select className="form-select" value={month} onChange={e => setMonth(e.target.value)}>
-                        {monthOptions.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
-                    </select>
                     <button className="btn btn-outline-secondary" onClick={() => window.print()}><i className="ti ti-printer me-1"></i>พิมพ์</button>
-                    <button className="btn btn-primary"><i className="ti ti-file-type-pdf me-1"></i>PDF</button>
+                    <button className="btn btn-outline-success" onClick={exportExcel}><i className="ti ti-file-export me-1"></i>Export Excel</button>
+                    <button className="btn btn-primary" onClick={exportPdf}><i className="ti ti-file-type-pdf me-1"></i>Export PDF</button>
                 </div>
             </div>
 
-            {/* Print header */}
-            <div className="card mb-3 d-print-block">
+            <div className="card mb-3 no-print">
+                <div className="card-body">
+                    <div className="row g-3">
+                        <div className="col-md-3">
+                            <label className="form-label">เดือน</label>
+                            <select className="form-select" value={month} onChange={(e) => setMonth(e.target.value)}>
+                                {monthOptions.map((o) => <option key={o.val} value={o.val}>{o.label}</option>)}
+                            </select>
+                        </div>
+                        <div className="col-md-3">
+                            <label className="form-label">ประเภทรายงาน</label>
+                            <select className="form-select" value={reportType} onChange={(e) => setReportType(e.target.value)}>
+                                <option value="all">รายได้ทั้งหมด</option>
+                                <option value="service">แยกตามบริการ</option>
+                                <option value="technician">แยกตามช่าง</option>
+                            </select>
+                        </div>
+                        <div className="col-md-3 d-flex align-items-end">
+                            <button className="btn btn-primary" onClick={fetchData}>
+                                <i className="ti ti-refresh me-1"></i>แสดงรายงาน
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="card mb-3">
                 <div className="card-body text-center">
                     <h2 className="mb-1">AUTOCAR SERVICE CENTER</h2>
                     <p className="text-muted mb-2">123 ถ.สุขุมวิท แขวงพระโขนง เขตคลองเตย กรุงเทพฯ 10110 | โทร. 02-123-4567</p>
@@ -69,7 +155,6 @@ export default function ReportMonthlyPage() {
                 </div>
             </div>
 
-            {/* Summary Cards */}
             <div className="row row-deck row-cards mb-3">
                 {[
                     { label: 'รายได้รวม', value: s?.totalRevenue || 0, cls: 'bg-success-lt', avatarCls: 'bg-success', icon: 'ti-currency-baht' },
@@ -93,14 +178,13 @@ export default function ReportMonthlyPage() {
                 ))}
             </div>
 
-            {/* Charts Row */}
             <div className="row row-deck row-cards mb-3">
                 <div className="col-lg-8">
                     <div className="card">
                         <div className="card-header"><h3 className="card-title">รายได้รายวัน</h3></div>
                         <div className="card-body">
                             <div style={{ height: 200, display: 'flex', alignItems: 'flex-end', gap: 3 }}>
-                                {(data?.dailyRows || []).map(row => {
+                                {(data?.dailyRows || []).map((row) => {
                                     const h = data?.maxDayRevenue ? Math.max((row.total / data.maxDayRevenue) * 100, row.total > 0 ? 5 : 0) : 0
                                     const isWeekend = [0, 6].includes(new Date(row.date).getDay())
                                     return (
@@ -149,7 +233,6 @@ export default function ReportMonthlyPage() {
                 </div>
             </div>
 
-            {/* Detail Table */}
             <div className="card">
                 <div className="card-header"><h3 className="card-title">รายละเอียดรายได้</h3></div>
                 <div className="table-responsive">
@@ -164,7 +247,7 @@ export default function ReportMonthlyPage() {
                         <tbody>
                             {loading ? (
                                 <tr><td colSpan={6} className="text-center py-4"><div className="spinner-border text-primary"></div></td></tr>
-                            ) : (data?.dailyRows || []).filter(r => r.total > 0).map(row => (
+                            ) : (data?.dailyRows || []).filter((r) => r.total > 0).map((row) => (
                                 <tr key={row.day}>
                                     <td>{new Date(row.date).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: '2-digit' })}</td>
                                     <td className="text-end">{row.jobCount}</td>

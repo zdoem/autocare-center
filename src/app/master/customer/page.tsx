@@ -9,6 +9,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import MainLayout from '@/components/layout/MainLayout'
 import { Modal, FormInput, FormSelect, showCreateSuccess, showUpdateSuccess, showDeleteSuccess, showError, confirmDelete } from '@/components/ui'
 
@@ -63,6 +64,7 @@ const formatDateThaiShort = (dateString: string | Date | undefined | null) => {
 }
 
 export default function CustomerPage() {
+    const router = useRouter()
     const [customers, setCustomers] = useState<Customer[]>([])
     const [customerTypes, setCustomerTypes] = useState<CustomerType[]>([])
     const [loading, setLoading] = useState(true)
@@ -391,17 +393,25 @@ export default function CustomerPage() {
                                         <td className="text-end">
                                             <a
                                                 href="#"
+                                                className="btn btn-ghost-secondary btn-icon btn-sm"
+                                                title="ดูรายละเอียด"
+                                                onClick={(e) => { e.preventDefault(); router.push(`/master/customer/${item.id}`) }}
+                                            >
+                                                <i className="ti ti-eye" />
+                                            </a>
+                                            <a
+                                                href="#"
                                                 className="btn btn-ghost-primary btn-icon btn-sm"
                                                 onClick={(e) => { e.preventDefault(); handleEdit(item) }}
                                             >
-                                                <i className="ti ti-edit"></i>
+                                                <i className="ti ti-edit" />
                                             </a>
                                             <a
                                                 href="#"
                                                 className="btn btn-ghost-danger btn-icon btn-sm"
                                                 onClick={(e) => { e.preventDefault(); handleDelete(item) }}
                                             >
-                                                <i className="ti ti-trash"></i>
+                                                <i className="ti ti-trash" />
                                             </a>
                                         </td>
                                     </tr>

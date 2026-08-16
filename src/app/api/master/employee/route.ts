@@ -12,6 +12,8 @@ import { employeeSchema } from '@/lib/validations/hr'
 import { ZodError } from 'zod'
 import bcrypt from 'bcryptjs'
 
+import { generateCode } from '@/lib/utils/codeGenerator'
+
 // GET - ดึงรายการพนักงานทั้งหมด
 export async function GET(request: NextRequest) {
     try {
@@ -128,19 +130,7 @@ export async function POST(request: NextRequest) {
         const validatedData = employeeSchema.parse(body)
 
         // Generate employee code
-        const lastEmployee = await prisma.employee.findFirst({
-            orderBy: { code: 'desc' }
-        })
-
-        let nextId = 1
-        if (lastEmployee && lastEmployee.code) {
-            const currentId = parseInt(lastEmployee.code.replace('E', ''))
-            if (!isNaN(currentId)) {
-                nextId = currentId + 1
-            }
-        }
-
-        const employeeCode = `E${String(nextId).padStart(3, '0')}`
+        const employeeCode = await generateCode('EMP-', 'employee', 3)
 
         // Check duplicate username (if provided)
         if (validatedData.username) {

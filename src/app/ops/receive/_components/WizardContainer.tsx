@@ -1,8 +1,8 @@
 'use client'
 
-import { useOpsReceive } from './_context/OpsReceiveContext'
-import { StepIndicator } from './_components/StepIndicator'
-import { Step1Search } from './_components/Step1Search'
+import { useOpsReceive } from '../_context/OpsReceiveContext'
+import { StepIndicator } from './StepIndicator'
+import { Step1Search } from './Step1Search'
 
 const STEPS = [
     'ค้นหาลูกค้า/รถ',

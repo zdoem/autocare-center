@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
 
         let newCode = 'CT01'
         if (lastType?.code) {
-            const lastNum = parseInt(lastType.code.replace('CT', ''))
+            const digits = lastType.code.replace(/\D/g, '')
+            const lastNum = digits ? parseInt(digits, 10) : 0
             newCode = `CT${String(lastNum + 1).padStart(2, '0')}`
         }
 

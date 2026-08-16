@@ -14,7 +14,7 @@ export default auth((req) => {
     const isLoggedIn = !!req.auth
 
     // Public paths ที่ไม่ต้อง authentication
-    const publicPaths = ['/login', '/api/auth', '/api/master', '/api/ops']
+    const publicPaths = ['/login', '/forgot-password', '/reset-password', '/api/auth', '/api/master', '/api/ops']
     const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
 
     // ถ้าเป็น public path ให้ผ่านได้เลย

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
                 case 'in-service':
                     where.serviceJobs = {
                         some: {
-                            status: { in: ['PENDING', 'IN_PROGRESS', 'WAITING_PARTS'] }
+                            status: { in: ['RECEIVED', 'INSPECTION', 'IN_PROGRESS', 'WAITING_PARTS'] }
                         }
                     }
                     break
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
                 case 'normal':
                     where.serviceJobs = {
                         none: {
-                            status: { in: ['PENDING', 'IN_PROGRESS', 'WAITING_PARTS'] }
+                            status: { in: ['RECEIVED', 'INSPECTION', 'IN_PROGRESS', 'WAITING_PARTS'] }
                         }
                     }
                     break
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
             let carStatus = 'normal'
 
             const activeJobs = car.serviceJobs.filter(job =>
-                ['PENDING', 'IN_PROGRESS', 'WAITING_PARTS'].includes(job.status)
+                ['RECEIVED', 'INSPECTION', 'IN_PROGRESS', 'WAITING_PARTS'].includes(job.status)
             )
 
             const unpaidJobs = car.serviceJobs.filter(job => !job.isPaid)

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'carId is required' }, { status: 400 })
         }
 
-        // Get car brand and model
+        // Get car details
         const car = await prisma.car.findUnique({
             where: { id: carId },
             include: {
@@ -24,68 +24,64 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Car not found' }, { status: 404 })
         }
 
-        // Get maintenance templates for this brand/model
+        // Get active maintenance templates
         const templates = await prisma.maintenanceTemplate.findMany({
             where: {
-                OR: [
-                    { carBrandId: car.carBrandId, carModelId: car.carModelId },
-                    { carBrandId: car.carBrandId, carModelId: null },
-                    { carBrandId: null, carModelId: null }, // Universal templates
-                ],
                 isActive: true,
             },
             include: {
-                service: true,
+                items: {
+                    include: {
+                        service: true
+                    }
+                }
             },
             orderBy: {
-                recommendedMileage: 'asc',
+                mileageInterval: 'asc',
             },
         })
 
-        // Filter templates based on mileage and convert to recommendations
-        const recommendations = templates
-            .filter(template => {
-                // Check if mileage is within range
-                if (template.recommendedMileage) {
-                    const diff = mileage - template.recommendedMileage
-                    // Recommend if within ±5000 km or overdue
-                    return diff >= -5000 && diff <= 10000
-                }
-                return true
-            })
-            .map(template => {
-                const mileageDiff = template.recommendedMileage ? mileage - template.recommendedMileage : 0
+        // Map recommendations based on mileageInterval
+        const recommendations: any[] = []
+
+        for (const template of templates) {
+            const targetMileage = template.mileageInterval || 0
+            if (targetMileage <= 0) continue
+
+            const mileageDiff = mileage - targetMileage
+            // Filter: recommend if within range (-5000 to +10000 km)
+            if (mileageDiff >= -5000 && mileageDiff <= 10000) {
                 let priority: 'URGENT' | 'RECOMMENDED' | 'OPTIONAL' = 'OPTIONAL'
                 let reason = ''
 
-                if (template.recommendedMileage) {
-                    if (mileageDiff > 0) {
-                        priority = mileageDiff > 5000 ? 'URGENT' : 'RECOMMENDED'
-                        reason = `เกินกำหนดแล้ว ${mileageDiff.toLocaleString()} กม.`
-                    } else if (mileageDiff > -2000) {
-                        priority = 'RECOMMENDED'
-                        reason = `ใกล้ถึงกำหนดแล้ว (อีก ${Math.abs(mileageDiff).toLocaleString()} กม.)`
-                    } else {
-                        reason = `อีก ${Math.abs(mileageDiff).toLocaleString()} กม.`
-                    }
+                if (mileageDiff > 0) {
+                    priority = mileageDiff > 5000 ? 'URGENT' : 'RECOMMENDED'
+                    reason = `เกินกำหนดแล้ว ${mileageDiff.toLocaleString()} กม.`
+                } else if (mileageDiff > -2000) {
+                    priority = 'RECOMMENDED'
+                    reason = `ใกล้ถึงกำหนดแล้ว (อีก ${Math.abs(mileageDiff).toLocaleString()} กม.)`
+                } else {
+                    reason = `อีก ${Math.abs(mileageDiff).toLocaleString()} กม.`
                 }
 
-                return {
-                    id: template.id,
-                    title: template.title,
-                    description: template.description || '',
-                    priority,
-                    reason,
-                    estimatedCost: template.estimatedCost || 0,
-                    serviceId: template.serviceId,
-                    service: template.service,
+                for (const item of template.items) {
+                    recommendations.push({
+                        id: `${template.id}-${item.id}`,
+                        title: `${template.name}: ${item.description}`,
+                        description: template.description || item.description,
+                        priority,
+                        reason,
+                        estimatedCost: item.estimatedCost ? Number(item.estimatedCost) : 0,
+                        serviceId: item.serviceId,
+                        service: item.service,
+                    })
                 }
-            })
-            .sort((a, b) => {
-                // Sort by priority: URGENT > RECOMMENDED > OPTIONAL
-                const priorityOrder = { URGENT: 0, RECOMMENDED: 1, OPTIONAL: 2 }
-                return priorityOrder[a.priority] - priorityOrder[b.priority]
-            })
+            }
+        }
+
+        // Sort by priority: URGENT > RECOMMENDED > OPTIONAL
+        const priorityOrder = { URGENT: 0, RECOMMENDED: 1, OPTIONAL: 2 }
+        recommendations.sort((a, b) => priorityOrder[a.priority as keyof typeof priorityOrder] - priorityOrder[b.priority as keyof typeof priorityOrder])
 
         return NextResponse.json(recommendations)
     } catch (error) {

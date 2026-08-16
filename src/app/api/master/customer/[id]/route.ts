@@ -2,6 +2,61 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// GET - Get single customer with relations
+export async function GET(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    try {
+        const customer = await prisma.customer.findUnique({
+            where: { id: params.id },
+            include: {
+                customerType: true,
+                cars: {
+                    include: {
+                        carBrand: true,
+                        carModel: true,
+                    },
+                    where: { isActive: true },
+                    orderBy: { updatedAt: 'desc' },
+                },
+                serviceJobs: {
+                    include: {
+                        car: {
+                            include: {
+                                carBrand: true,
+                                carModel: true,
+                            }
+                        },
+                        technician: { select: { id: true, name: true } },
+                    },
+                    orderBy: { jobDate: 'desc' },
+                    take: 10,
+                },
+                _count: {
+                    select: { cars: true, serviceJobs: true }
+                }
+            }
+        })
+
+        if (!customer) {
+            return NextResponse.json(
+                { success: false, error: 'ไม่พบข้อมูลลูกค้า' },
+                { status: 404 }
+            )
+        }
+
+        return NextResponse.json({ success: true, data: customer })
+    } catch (error) {
+        console.error('Error fetching customer:', error)
+        return NextResponse.json(
+            { success: false, error: 'ไม่สามารถโหลดข้อมูลได้' },
+            { status: 500 }
+        )
+    }
+}
+
 // Validation schema
 const customerSchema = z.object({
     firstName: z.string().min(2, 'กรุณากรอกชื่อ'),

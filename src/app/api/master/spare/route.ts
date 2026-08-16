@@ -113,12 +113,18 @@ export async function POST(request: NextRequest) {
         // Generate unique code
         const code = await generateCode('SP', 'spare', 3)
 
+        // Extract relation IDs and costPrice
+        const { sparesCategoryId, vendorId, costPrice, ...rest } = validatedData
+
         // Create spare
         const spare = await prisma.spare.create({
             data: {
                 code,
-                ...validatedData as any,
+                ...rest as any,
+                costPrice: costPrice ?? 0,
                 currentStock: validatedData.currentStock || 0,
+                ...(sparesCategoryId ? { sparesCategory: { connect: { id: sparesCategoryId } } } : {}),
+                ...(vendorId ? { vendor: { connect: { id: vendorId } } } : {}),
             },
             include: {
                 sparesCategory: true,
