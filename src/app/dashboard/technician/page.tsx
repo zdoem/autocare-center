@@ -42,7 +42,9 @@ export default async function TechnicianDashboardPage() {
         switch (status) {
             case 'RECEIVED':
             case 'APPROVED':
-                return <span className="badge bg-yellow text-dark fw-bold"><i className="ti ti-clock me-1"></i>รอรับรถ/คิว</span>
+                return <span className="badge bg-warning text-white fw-medium"><i className="ti ti-clock me-1"></i>รอรับรถ/คิว</span>
+            case 'WAITING_APPROVAL':
+                return <span className="badge bg-orange text-white fw-medium"><i className="ti ti-hourglass me-1"></i>รออนุมัติ</span>
             case 'IN_PROGRESS':
                 return <span className="badge bg-azure text-white fw-medium"><i className="ti ti-loader me-1"></i>กำลังทำ</span>
             case 'INSPECTION':
@@ -50,9 +52,9 @@ export default async function TechnicianDashboardPage() {
             case 'WAITING_PARTS':
                 return <span className="badge bg-orange text-white fw-medium"><i className="ti ti-package me-1"></i>รออะไหล่</span>
             case 'QC_CHECK':
-                return <span className="badge bg-purple text-white fw-medium"><i className="ti ti-check me-1"></i>QC ตรวจสอบ</span>
+                return <span className="badge bg-purple text-white fw-medium"><i className="ti ti-shield-check me-1"></i>QC ตรวจสอบ</span>
             case 'WAITING_PAYMENT':
-                return <span className="badge bg-warning text-dark fw-bold"><i className="ti ti-cash me-1"></i>รอชำระเงิน</span>
+                return <span className="badge bg-warning text-white fw-medium"><i className="ti ti-cash me-1"></i>รอชำระเงิน</span>
             case 'COMPLETED':
             case 'DELIVERED':
                 return <span className="badge bg-green text-white fw-medium"><i className="ti ti-circle-check me-1"></i>เสร็จแล้ว</span>

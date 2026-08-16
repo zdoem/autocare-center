@@ -62,17 +62,17 @@ const STATUS_TABS = [
 ]
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: string }> = {
-    RECEIVED: { label: 'รอรับรถ', color: 'yellow', icon: 'ti-clock' },
-    INSPECTION: { label: 'ตรวจเช็ค', color: 'cyan', icon: 'ti-search' },
-    WAITING_APPROVAL: { label: 'รออนุมัติ', color: 'purple', icon: 'ti-hourglass' },
+    RECEIVED: { label: 'รอรับรถ', color: 'warning', icon: 'ti-clock' },
+    INSPECTION: { label: 'ตรวจเช็ค', color: 'azure', icon: 'ti-search' },
+    WAITING_APPROVAL: { label: 'รออนุมัติ', color: 'orange', icon: 'ti-hourglass' },
     APPROVED: { label: 'อนุมัติแล้ว', color: 'indigo', icon: 'ti-check' },
     IN_PROGRESS: { label: 'กำลังซ่อม', color: 'blue', icon: 'ti-tool' },
-    WAITING_PARTS: { label: 'รออะไหล่', color: 'pink', icon: 'ti-package' },
+    WAITING_PARTS: { label: 'รออะไหล่', color: 'orange', icon: 'ti-package' },
     QC_CHECK: { label: 'QC', color: 'teal', icon: 'ti-shield-check' },
-    WAITING_PAYMENT: { label: 'รอชำระเงิน', color: 'orange', icon: 'ti-cash' },
+    WAITING_PAYMENT: { label: 'รอชำระเงิน', color: 'warning', icon: 'ti-cash' },
     COMPLETED: { label: 'เสร็จแล้ว', color: 'green', icon: 'ti-check' },
     DELIVERED: { label: 'ส่งมอบแล้ว', color: 'lime', icon: 'ti-car' },
-    CANCELLED: { label: 'ยกเลิก', color: 'red', icon: 'ti-x' },
+    CANCELLED: { label: 'ยกเลิก', color: 'secondary', icon: 'ti-x' },
 }
 
 const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
