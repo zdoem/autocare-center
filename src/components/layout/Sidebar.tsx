@@ -117,15 +117,35 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
                 .navbar-vertical {
                     min-width: 250px !important;
                     max-width: 250px !important;
+                    display: flex !important;
+                    flex-direction: column !important;
                 }
-                .navbar-vertical .navbar-brand {
+
+                .navbar-vertical > .container-fluid {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    height: 100% !important;
+                    padding: 0 !important;
                     margin: 0 !important;
-                    padding: 1.25rem 0.75rem 1rem 0.75rem !important;
+                }
+
+                .sidebar-brand-header {
+                    position: relative !important;
+                    width: 100% !important;
+                    padding: 1.5rem 1rem 1.25rem 1rem !important;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
                     display: flex !important;
                     flex-direction: column !important;
                     align-items: center !important;
                     justify-content: center !important;
                     text-align: center !important;
+                    flex-shrink: 0 !important;
+                    background: transparent !important;
+                }
+
+                .navbar-vertical .navbar-collapse {
+                    flex: 1 1 auto !important;
+                    padding: 0.5rem 0.5rem !important;
                 }
             `}</style>
             <div className="container-fluid">
@@ -139,8 +159,8 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
-                {/* Logo & Brand Header - Icon on top, Text centered below */}
-                <div className="navbar-brand navbar-brand-autodark px-3 py-3 w-100 text-center border-bottom border-secondary border-opacity-25 mb-2">
+                {/* Logo & Brand Header - Anchored at the top */}
+                <div className="sidebar-brand-header">
                     <Link href="/dashboard" className="d-flex flex-column align-items-center justify-content-center text-decoration-none w-100">
                         <img
                             src={CAR_LOGO_URL}
@@ -154,9 +174,9 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
                     </Link>
                 </div>
 
-                {/* Navigation - ใช้ React state จัดการ dropdown */}
+                {/* Navigation - Starts immediately below the header */}
                 <div className="navbar-collapse" id="sidebar-menu" style={{ display: 'block' }}>
-                    <ul className="navbar-nav pt-lg-3">
+                    <ul className="navbar-nav pt-lg-2">
                         {navItems.map((item, index) => (
                             <li key={index} className={`nav-item ${item.children ? 'dropdown' : ''}`}>
                                 {item.children ? (
