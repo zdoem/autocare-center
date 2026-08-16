@@ -70,11 +70,23 @@ body {
 }
 
 /* =========================================================
-   Universal Clean Borders: Remove all left-border stripes
+   Universal Clean Borders: Completely eliminate all 
+   left-border stripes, vertical lines (:before, :after),
    and highlight bars across the entire system
    ========================================================= */
 .alert {
   border-left-width: 1px !important;
+  padding-left: 1rem !important;
+}
+
+.alert::before,
+.alert::after {
+  display: none !important;
+  content: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: none !important;
+  background: transparent !important;
 }
 
 .alert-success,

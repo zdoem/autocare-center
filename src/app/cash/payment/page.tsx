@@ -379,9 +379,9 @@ function PaymentContent() {
                                         </div>
                                     </div>
                                     <div className="col-md-6">
-                                        <div className={`alert mb-0 ${changeAmount >= 0 ? 'alert-success' : 'alert-danger'}`}>
+                                        <div className={`p-3 rounded-3 mb-0 border ${changeAmount >= 0 ? 'bg-success-lt text-success border-success-subtle' : 'bg-danger-lt text-danger border-danger-subtle'}`}>
                                             <div className="d-flex justify-content-between align-items-center">
-                                                <span><i className="ti ti-arrow-back-up me-1"></i>เงินทอน</span>
+                                                <span className="fw-medium"><i className="ti ti-arrow-back-up me-1"></i>เงินทอน</span>
                                                 <span className="fs-2 fw-bold">฿{formatMoney(changeAmount)}</span>
                                             </div>
                                         </div>
@@ -538,7 +538,7 @@ function PaymentContent() {
                             <span className="display-6 fw-bold text-primary">฿{formatMoney(job.grandTotal)}</span>
                         </div>
 
-                        <div className="alert alert-info mb-4">
+                        <div className="p-3 bg-blue-lt text-blue rounded-3 mb-4 border border-blue-subtle">
                             <i className="ti ti-info-circle me-2"></i>วิธีชำระ: 
                             <strong className="ms-1">
                                 {activeMethod === 'cash' ? 'เงินสด' : activeMethod === 'transfer' ? 'โอน/QR PromptPay' : 'บัตรเครดิต'}
