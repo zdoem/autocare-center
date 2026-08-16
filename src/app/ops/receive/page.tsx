@@ -66,7 +66,7 @@ export default function OpsReceivePage() {
         initialNotes: '',
         estimatedDays: 1,
         technicianId: '',
-        status: 'QUOTATION', // Default status for this workflow
+        status: 'RECEIVED', // Default status: รอรับรถ / พร้อมเริ่มงาน
         workshopBay: '',
         appointmentDate: '',
         laborHours: 0,

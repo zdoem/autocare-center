@@ -443,6 +443,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                 <label className="form-label">สถานะ</label>
                                 <select className="form-select" value={statusInput} onChange={(e) => setStatusInput(e.target.value)}>
                                     <option value="RECEIVED">รอรับรถ / รับรถแล้ว</option>
+                                    <option value="WAITING_APPROVAL">รออนุมัติ</option>
                                     <option value="APPROVED">อนุมัติแล้ว</option>
                                     <option value="IN_PROGRESS">กำลังซ่อม</option>
                                     <option value="INSPECTION">ตรวจสอบ</option>
@@ -506,7 +507,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
                     {/* Actions */}
                     <div className="d-grid gap-2">
-                        {(job.status === 'RECEIVED' || job.status === 'APPROVED') && (
+                        {(job.status === 'RECEIVED' || job.status === 'APPROVED' || job.status === 'WAITING_APPROVAL') && (
                             <button className="btn btn-primary btn-lg" onClick={() => handlePrimaryAction('IN_PROGRESS')}>
                                 <i className="ti ti-player-play me-1"></i>เริ่มงานซ่อม
                             </button>
