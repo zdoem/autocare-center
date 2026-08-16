@@ -323,6 +323,7 @@ export default function SystemSettingsPage() {
                                                     type="checkbox"
                                                     checked={notifSettings.lineEnabled}
                                                     onChange={e => setNotifSettings({ ...notifSettings, lineEnabled: e.target.checked })}
+                                                />
                                                 <span className="form-check-label">เปิดใช้งาน LINE Notify สำหรับช่างและแคชเชียร์</span>
                                             </label>
                                         </div>
