@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚗 Autocar Service Center System
 
-## Getting Started
+ระบบบริหารจัดการศูนย์บริการซ่อมบำรุงรถยนต์แบบครบวงจร (Full-Stack Auto Service Center Management System) พัฒนาด้วย Next.js 16 (App Router), React 19, TypeScript, PostgreSQL, Prisma ORM 6 และ Playwright Testing Suite
 
-First, run the development server:
+---
 
+## 🌟 คุณสมบัติเด่นของระบบ (Core Features)
+
+### 1. 🔐 ระบบยืนยันตัวตนและการเข้าถึง (Authentication & Role-Based Access)
+- รองรับการเข้าใช้งานตามบทบาท (Admin, Manager, Technician, Cashier)
+- ระบบจัดการสิทธิ์และความปลอดภัยด้วย NextAuth.js (Auth.js v5)
+
+### 2. 📊 แดชบอร์ดและภาพรวมการทำงาน (Real-time Dashboards)
+- แดชบอร์ดแสดง KPI ภาพรวม รายรับประจำวัน จำนวนงานซ่อมตามสถานะ และงานที่อยู่ระหว่างดำเนินการ
+- มุมมองแยกตามสายงาน (Admin, Technician, Cashier Dashboard)
+
+### 3. 📁 ระบบจัดการข้อมูลหลัก (Master Data Management)
+- **ข้อมูลบุคลากร (HR):** แผนก (Department), ตำแหน่ง (Position), ประเภทพนักงาน (Employee Type), พนักงาน (Employee)
+- **ข้อมูลลูกค้าและรถยนต์:** ประเภทลูกค้า (Customer Type), ลูกค้า (Customer), ยี่ห้อรถ (Car Brand), รุ่นรถ (Car Model), รถยนต์ (Vehicle)
+- **ข้อมูลบริการและอะไหล่:** หมวดหมู่บริการ (Service Category), รายการบริการ (Service), หมวดหมู่อะไหล่ (Spares Category), รายการอะไหล่ (Spare), ผู้จัดจำหน่าย (Vendor), ช่องทางชำระเงิน (Payment Type)
+
+### 4. 🛠️ ระบบปฏิบัติการศูนย์บริการ (Service Operations Workflow)
+- **ระบบรับรถเข้าบริการ (Vehicle Intake Wizard):** บันทึกข้อมูลรถ เลขไมล์ อาการแจ้งซ่อม ตรวจเช็กรอบคัน (Inspection Checklist) และถ่ายภาพบันทึกสภาพรถ
+- **ระบบติดตามสถานะงานซ่อม (Service Job Workflow):**  
+  `RECEIVED` (รับรถ) ➔ `INSPECTION` (ตรวจเช็ก) ➔ `WAITING_APPROVAL` (รออนุมัติ) ➔ `IN_PROGRESS` (กำลังซ่อม) ➔ `WAITING_PARTS` (รออะไหล่) ➔ `QC_CHECK` (ตรวจคุณภาพ) ➔ `COMPLETED` (ซ่อมเสร็จสิ้น) ➔ `DELIVERED` (ส่งมอบรถ)
+- **ระบบแนะนำรายการบำรุงรักษา (Maintenance Recommendations):** ประเมินรายการบำรุงรักษาอัตโนมัติตามระยะทาง (Km)
+- **ระบบค้นหาและประวัติการซ่อม (Search & History):** ค้นหารถยนต์ ลูกค้า ทะเบียนรถ เบอร์โทรศัพท์ และดูประวัติการซ่อมย้อนหลัง
+
+### 5. 💰 ระบบการเงินและแคชเชียร์ (Cashier & Financial Management)
+- บันทึกการชำระเงินรองรับหลายช่องทาง (เงินสด, โอนเงิน, บัตรเครดิต)
+- ออกใบเสร็จรับเงินอัตโนมัติ (`RCT-YYYYMM-XXXX`) พร้อมคำนวณภาษีมูลค่าเพิ่ม (VAT 7%)
+- สรุปรายรับประจำวันและการปิดยอดแคชเชียร์
+
+### 6. 📦 ระบบคลังสินค้าและอะไหล่ (Inventory Management)
+- การสั่งซื้ออะไหล่จาก Vendor (`PO-YYMMDD-XXX`)
+- การรับสินค้าเข้าคลัง และการตัดสต็อกอัตโนมัติเมื่อมีการใช้งานซ่อม
+- ระบบบันทึกการเคลื่อนไหวสต็อก (Stock Movement IN / OUT / ADJUST)
+- ระบบแจ้งเตือนอะไหล่สต็อกต่ำ (Low Stock Alert & Out of Stock Notification)
+
+### 7. 📈 ระบบรายงานเชิงวิเคราะห์ (Analytics & Reports)
+- รายงานรายรับประจำวัน (Daily Summary Report)
+- รายงานรายรับประจำเดือน (Monthly Revenue Breakdown)
+- รายงานการให้บริการตามหมวดหมู่ (Service Category Analytics)
+- รายงานลูกค้าทรงคุณค่า (Top Customers & Customer Report)
+- รายงานประสิทธิภาพช่างซ่อม (Technician Performance Stats)
+
+---
+
+## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
+
+| ส่วนประกอบ | เทคโนโลยีที่ใช้ |
+| :--- | :--- |
+| **Frontend Framework** | Next.js 16 (App Router), React 19, TypeScript 5 |
+| **Styling & UI Components** | Vanilla CSS Design System, Tabler UI Components, Modern CSS Glassmorphism |
+| **Backend & API** | Next.js Route Handlers (`src/app/api/...`), Server Actions |
+| **Database & ORM** | PostgreSQL 15+, Prisma ORM 6.19.2 |
+| **Authentication** | NextAuth.js (Auth.js v5) / bcryptjs |
+| **Form Validation** | Zod Schema Validation |
+| **Automation & Testing** | Playwright Test Runner (UI E2E & Direct API Integration Suite) |
+
+---
+
+## ⚙️ ข้อกำหนดก่อนเริ่มใช้งาน (Prerequisites)
+
+1. **Node.js:** v18.18.0 ขึ้นไป (แนะนำ Node.js v20 LTS)
+2. **Database:** PostgreSQL Server 15+ (Listening on port `5432`)
+3. **Package Manager:** npm (v9+)
+
+---
+
+## 🚀 การติดตั้งและตั้งค่าเริ่มต้น (Getting Started)
+
+### 1. Clone Repository & Install Dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd autocare-center
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Configure Environment Variables (`.env`)
+สร้างไฟล์ `.env` ใน Root Directory:
+```env
+DATABASE_URL="postgresql://pgadmin:P@ssw0rd@localhost:5432/db_autocar?schema=public"
+NEXTAUTH_URL="http://127.0.0.1:3000"
+NEXTAUTH_SECRET="your-super-secret-key-here"
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Database Migration & Data Seeding
+```bash
+# รัน Database Migration
+npx prisma migrate dev --name init
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Seed ข้อมูลเริ่มต้น (ผู้ใช้งานเริ่มต้น, แผนก, ตำแหน่ง, อะไหล่, รายการบริการ)
+npx prisma db seed
+```
 
-## Learn More
+### 4. Run Development Server
+```bash
+npm run dev
+```
+เปิดเบราว์เซอร์ไปที่ `http://127.0.0.1:3000`
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🧪 การทดสอบอัตโนมัติ (Automated Testing Suite)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+โครงการนี้มีชุดทดสอบครอบคลุม **188 Test Cases** (100% Pass Rate):
 
-## Deploy on Vercel
+```bash
+# 1. รันการทดสอบระบบ Direct API ทั้งหมด (124 Cases)
+npx playwright test --project=api-tests
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# 2. รันการทดสอบหน้าจอ UI E2E ทั้งหมด (64 Cases)
+npx playwright test --project=chromium
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# 3. รันการทดสอบภาพรวมทั้งระบบ (188 Cases)
+npx playwright test --project=chromium --project=api-tests
+```
+
+ดูรายงานสรุปการทดสอบฉบับเต็มได้ที่ [`documents/E2E_TEST_SUMMARY.md`](./documents/E2E_TEST_SUMMARY.md)
+
+---
+
+## 📂 โครงสร้างโฟลเดอร์โครงการ (Directory Structure)
+
+```
+autocare-center/
+├── documents/                # เอกสารสรุปการทดสอบและสถาปัตยกรรมระบบ
+├── prisma/
+│   ├── schema.prisma         # Prisma Data Model & Enums
+│   └── seed.ts               # Database Initial Seed Script
+├── public/                   # Static Assets & Images
+├── src/
+│   ├── app/                  # Next.js App Router (Pages & API Routes)
+│   │   ├── (auth)/           # Pages: Login, Forgot Password
+│   │   ├── api/              # API Endpoints (/master, /ops, /cash, /inventory, /reports)
+│   │   ├── cash/             # Cashier & Payment Pages
+│   │   ├── inventory/        # Stock & PO Pages
+│   │   ├── master/           # Master Data CRUD Pages
+│   │   ├── ops/              # Vehicle Intake & Service Job Pages
+│   │   └── reports/          # Report Pages
+│   ├── components/           # UI Components & Layouts
+│   ├── lib/                  # Database, Auth, Utils & Zod Validations
+│   └── middleware.ts         # Authentication Middleware
+├── tests/
+│   ├── api/                  # Direct API Integration Spec Files (124 cases)
+│   ├── e2e/                  # UI End-to-End Spec Files (64 cases)
+│   └── fixtures/             # Test Data & API Helpers
+├── playwright.config.ts      # Playwright Configuration
+└── package.json
+```
+
+---
+
+## 📝 ลิขสิทธิ์และการดูแลรักษา (Maintainers)
+
+- **Project Name:** Autocar Service Center
+- **Development Team:** AutoCare Software Team
+- **License:** MIT License
