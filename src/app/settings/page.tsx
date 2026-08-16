@@ -323,7 +323,6 @@ export default function SystemSettingsPage() {
                                                     type="checkbox"
                                                     checked={notifSettings.lineEnabled}
                                                     onChange={e => setNotifSettings({ ...notifSettings, lineEnabled: e.target.checked })}
-                                                />
                                                 <span className="form-check-label">เปิดใช้งาน LINE Notify สำหรับช่างและแคชเชียร์</span>
                                             </label>
                                         </div>
@@ -471,29 +470,72 @@ export default function SystemSettingsPage() {
                                                 <div className="d-flex">
                                                     <div className="me-2"><i className="ti ti-check fs-2"></i></div>
                                                     <div>
-                                                        <strong>สำรองล่าสุด:</strong> {new Date().toLocaleDateString('th-TH')} 02:00:00<br />
-                                                        <small className="text-muted">ขนาดไฟล์: 245 MB</small>
+                                                        <strong>สำรองล่าสุด:</strong> {lastBackupTime}<br />
+                                                        <small className="text-muted">ขนาดไฟล์: {lastBackupSize}</small>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
+                                        {/* Progress Bar Display */}
+                                        {isProcessing && (
+                                            <div className="col-12">
+                                                <div className="p-3 bg-light rounded-3 border border-primary-subtle shadow-sm">
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <span className="small fw-bold text-primary d-flex align-items-center">
+                                                            <span className="spinner-border spinner-border-sm me-2 text-primary" role="status"></span>
+                                                            {progressMessage}
+                                                        </span>
+                                                        <span className="badge bg-blue text-white fs-4 fw-bold">{progressPercent}%</span>
+                                                    </div>
+                                                    <div className="progress" style={{ height: '10px' }}>
+                                                        <div
+                                                            className={`progress-bar ${progressPercent === 100 ? 'bg-success' : 'bg-primary'} progress-bar-striped progress-bar-animated`}
+                                                            role="progressbar"
+                                                            style={{ width: `${progressPercent}%`, transition: 'width 0.4s ease' }}
+                                                            aria-valuenow={progressPercent}
+                                                            aria-valuemin={0}
+                                                            aria-valuemax={100}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="card-footer d-flex justify-content-between">
+                                <div className="card-footer d-flex justify-content-between align-items-center">
                                     <button
                                         type="button"
                                         className="btn btn-outline-success"
-                                        onClick={() => showCreateSuccess('กำลังดาวน์โหลดไฟล์สำรองข้อมูล (JSON)...')}
+                                        disabled={isProcessing}
+                                        onClick={handleDownloadBackup}
                                     >
-                                        <i className="ti ti-download me-1"></i>ดาวน์โหลด Backup
+                                        {backupStatus === 'downloading' ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                กำลังดาวน์โหลด ({progressPercent}%)
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ti ti-download me-1"></i>ดาวน์โหลด Backup
+                                            </>
+                                        )}
                                     </button>
                                     <button
                                         type="button"
                                         className="btn btn-primary"
-                                        disabled={saving}
-                                        onClick={() => handleSave('และเริ่มสำรองข้อมูลกะทันหัน')}
+                                        disabled={isProcessing}
+                                        onClick={handleBackupNow}
                                     >
-                                        <i className="ti ti-database-export me-1"></i>สำรองข้อมูลตอนนี้
+                                        {backupStatus === 'backing_up' ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                กำลังสำรองข้อมูล ({progressPercent}%)
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="ti ti-database-export me-1"></i>สำรองข้อมูลตอนนี้
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
