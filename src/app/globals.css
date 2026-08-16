@@ -30,3 +30,41 @@ body {
   font-size: 14px;
   line-height: 1.5;
 }
+
+/* =========================================================
+   Universal Badge Contrast Rule for All Modules
+   Enforces crisp white font on all solid/dark badges
+   ========================================================= */
+.badge:not([class*="-lt"]) {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+.badge.bg-secondary,
+.badge.bg-muted,
+.badge.bg-dark,
+.badge.bg-blue,
+.badge.bg-azure,
+.badge.bg-indigo,
+.badge.bg-purple,
+.badge.bg-pink,
+.badge.bg-red,
+.badge.bg-danger,
+.badge.bg-orange,
+.badge.bg-yellow,
+.badge.bg-lime,
+.badge.bg-green,
+.badge.bg-teal,
+.badge.bg-cyan,
+.badge.bg-primary,
+.badge.bg-success,
+.badge.bg-warning,
+.badge.bg-info {
+  color: #ffffff !important;
+}
+
+.badge.bg-secondary,
+.badge.bg-muted {
+  background-color: #64748b !important;
+  color: #ffffff !important;
+}
