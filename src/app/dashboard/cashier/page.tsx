@@ -8,6 +8,7 @@
 
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import MainLayout from '@/components/layout/MainLayout'
 
 export default async function CashierDashboardPage() {
@@ -105,9 +106,9 @@ export default async function CashierDashboardPage() {
                                         <td>เปลี่ยนน้ำมัน + กรอง</td>
                                         <td className="text-end fw-bold">฿3,500</td>
                                         <td>
-                                            <a href="#" className="btn btn-success">
+                                            <Link href="/cash/payment" className="btn btn-success">
                                                 <i className="ti ti-cash me-1"></i>ชำระเงิน
-                                            </a>
+                                            </Link>
                                         </td>
                                     </tr>
                                     <tr>
@@ -118,9 +119,9 @@ export default async function CashierDashboardPage() {
                                         <td>เช็คระยะ 10,000</td>
                                         <td className="text-end fw-bold">฿12,800</td>
                                         <td>
-                                            <a href="#" className="btn btn-success">
+                                            <Link href="/cash/payment" className="btn btn-success">
                                                 <i className="ti ti-cash me-1"></i>ชำระเงิน
-                                            </a>
+                                            </Link>
                                         </td>
                                     </tr>
                                     <tr>
@@ -131,9 +132,9 @@ export default async function CashierDashboardPage() {
                                         <td>เปลี่ยนผ้าเบรก 4 ล้อ</td>
                                         <td className="text-end fw-bold">฿8,500</td>
                                         <td>
-                                            <a href="#" className="btn btn-success">
+                                            <Link href="/cash/payment" className="btn btn-success">
                                                 <i className="ti ti-cash me-1"></i>ชำระเงิน
-                                            </a>
+                                            </Link>
                                         </td>
                                     </tr>
                                 </tbody>

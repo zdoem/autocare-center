@@ -8,6 +8,7 @@
 
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import MainLayout from '@/components/layout/MainLayout'
 
 export default async function TechnicianDashboardPage() {
@@ -86,24 +87,24 @@ export default async function TechnicianDashboardPage() {
                         <div className="card-body">
                             <div className="row g-3">
                                 <div className="col-6 col-md-3">
-                                    <a href="#" className="btn btn-outline-primary w-100">
+                                    <Link href="/service/jobs" className="btn btn-outline-primary w-100">
                                         <i className="ti ti-player-play me-2"></i>เริ่มงาน
-                                    </a>
+                                    </Link>
                                 </div>
                                 <div className="col-6 col-md-3">
-                                    <a href="#" className="btn btn-outline-warning w-100">
+                                    <Link href="/inventory/movement" className="btn btn-outline-warning w-100">
                                         <i className="ti ti-package me-2"></i>เบิกอะไหล่
-                                    </a>
+                                    </Link>
                                 </div>
                                 <div className="col-6 col-md-3">
-                                    <a href="#" className="btn btn-outline-danger w-100">
+                                    <Link href="/service/jobs" className="btn btn-outline-danger w-100">
                                         <i className="ti ti-alert-circle me-2"></i>บันทึกปัญหา
-                                    </a>
+                                    </Link>
                                 </div>
                                 <div className="col-6 col-md-3">
-                                    <a href="#" className="btn btn-success w-100">
+                                    <Link href="/service/jobs" className="btn btn-success w-100">
                                         <i className="ti ti-check me-2"></i>งานเสร็จ
-                                    </a>
+                                    </Link>
                                 </div>
                             </div>
                         </div>

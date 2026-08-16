@@ -8,6 +8,7 @@
 
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import MainLayout from '@/components/layout/MainLayout'
 
 export default async function AdminDashboardPage() {
@@ -286,7 +287,7 @@ export default async function AdminDashboardPage() {
                                         <span className="text-danger fw-bold">Stock Alert:</span> อะไหล่ "กรองน้ำมันเครื่อง" เหลือ 2 ชิ้น (Min: 10)
                                     </div>
                                     <div className="col-auto">
-                                        <a href="#" className="btn btn-sm btn-primary">สั่งซื้อ</a>
+                                        <Link href="/inventory/purchase" className="btn btn-sm btn-primary">สั่งซื้อ</Link>
                                     </div>
                                 </div>
                             </div>
@@ -299,7 +300,7 @@ export default async function AdminDashboardPage() {
                                         <span className="text-warning fw-bold">Payment:</span> รถทะเบียน กข-1234 รอชำระเงิน 3 วันแล้ว
                                     </div>
                                     <div className="col-auto">
-                                        <a href="#" className="btn btn-sm btn-outline-primary">ดูรายละเอียด</a>
+                                        <Link href="/cash/payment" className="btn btn-sm btn-outline-primary">ดูรายละเอียด</Link>
                                     </div>
                                 </div>
                             </div>
@@ -312,7 +313,7 @@ export default async function AdminDashboardPage() {
                                         <span className="text-primary fw-bold">Workload:</span> ช่างสมชาย มีงานค้าง 5 งาน
                                     </div>
                                     <div className="col-auto">
-                                        <a href="#" className="btn btn-sm btn-outline-primary">จัดการงาน</a>
+                                        <Link href="/service/jobs" className="btn btn-sm btn-outline-primary">จัดการงาน</Link>
                                     </div>
                                 </div>
                             </div>
