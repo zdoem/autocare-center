@@ -10,8 +10,8 @@
 
 'use client'
 
-import { useState, useEffect, use } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams, useParams } from 'next/navigation'
 import { COMPANY, DOCUMENT_CONFIG } from '@/lib/companyConfig'
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -344,10 +344,9 @@ const PRINT_STYLES = `
 }
 `
 
-// ─── Component ──────────────────────────────────────────────
-
-export default function PrintJobPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params)
+function PrintJobContent() {
+    const routeParams = useParams()
+    const id = (routeParams?.id as string) || ''
     const searchParams = useSearchParams()
     const docType = (searchParams.get('type') || 'quotation') as keyof typeof DOCUMENT_CONFIG
 
@@ -356,6 +355,7 @@ export default function PrintJobPage({ params }: { params: Promise<{ id: string 
     const [error, setError] = useState('')
 
     useEffect(() => {
+        if (!id) return
         fetch(`/api/ops/job/${id}`)
             .then(res => res.json())
             .then(json => {
@@ -670,5 +670,20 @@ export default function PrintJobPage({ params }: { params: Promise<{ id: string 
 
             </div>
         </>
+    )
+}
+
+export default function PrintJobPage() {
+    return (
+        <Suspense fallback={
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#e8e8e8' }}>
+                <div style={{ textAlign: 'center', color: '#666' }}>
+                    <div className="spinner-border text-primary mb-3" />
+                    <div>กำลังโหลดข้อมูล...</div>
+                </div>
+            </div>
+        }>
+            <PrintJobContent />
+        </Suspense>
     )
 }
