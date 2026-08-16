@@ -59,6 +59,62 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
 
     return (
         <aside className="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+            <style jsx global>{`
+                /* Sidebar Dropdown Container */
+                .navbar-vertical .dropdown-menu {
+                    background-color: rgba(0, 0, 0, 0.25) !important;
+                    border-radius: 8px !important;
+                    margin: 4px 8px 8px 12px !important;
+                    padding: 6px 8px !important;
+                    border-left: 2px solid rgba(255, 255, 255, 0.12) !important;
+                }
+
+                /* Submenu item default */
+                .navbar-vertical .dropdown-item {
+                    color: rgba(255, 255, 255, 0.65) !important;
+                    font-size: 0.86rem !important;
+                    padding: 7px 12px !important;
+                    border-radius: 6px !important;
+                    transition: all 0.18s ease-in-out !important;
+                    margin-bottom: 3px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                }
+
+                .navbar-vertical .dropdown-item:hover {
+                    background-color: rgba(255, 255, 255, 0.08) !important;
+                    color: #ffffff !important;
+                    transform: translateX(2px);
+                }
+
+                /* Active Submenu Item: Soft Tone Highlight */
+                .navbar-vertical .dropdown-item.active {
+                    background: rgba(32, 107, 196, 0.28) !important;
+                    color: #79b7ff !important;
+                    font-weight: 600 !important;
+                    border-left: 3px solid #3b82f6 !important;
+                    padding-left: 10px !important;
+                    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+                }
+
+                .navbar-vertical .dropdown-item.active i {
+                    color: #79b7ff !important;
+                }
+
+                /* Active Parent Nav Link */
+                .navbar-vertical .nav-link.dropdown-toggle.active {
+                    color: #ffffff !important;
+                    font-weight: 600 !important;
+                }
+
+                .navbar-vertical .nav-link.active:not(.dropdown-toggle) {
+                    background-color: rgba(32, 107, 196, 0.25) !important;
+                    color: #79b7ff !important;
+                    font-weight: 600 !important;
+                    border-left: 3px solid #3b82f6 !important;
+                    border-radius: 6px !important;
+                }
+            `}</style>
             <div className="container-fluid">
                 {/* Mobile Toggle */}
                 <button
