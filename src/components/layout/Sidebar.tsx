@@ -120,10 +120,12 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
                 }
                 .navbar-vertical .navbar-brand {
                     margin: 0 !important;
-                    padding: 1rem 0.75rem !important;
+                    padding: 1.25rem 0.75rem 1rem 0.75rem !important;
                     display: flex !important;
+                    flex-direction: column !important;
                     align-items: center !important;
-                    justify-content: flex-start !important;
+                    justify-content: center !important;
+                    text-align: center !important;
                 }
             `}</style>
             <div className="container-fluid">
@@ -137,20 +139,18 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
-                {/* Logo & Brand Header */}
-                <div className="navbar-brand navbar-brand-autodark px-3 py-3 w-100 text-start border-bottom border-secondary border-opacity-25 mb-1">
-                    <Link href="/dashboard" className="d-flex align-items-center text-decoration-none w-100">
+                {/* Logo & Brand Header - Icon on top, Text centered below */}
+                <div className="navbar-brand navbar-brand-autodark px-3 py-3 w-100 text-center border-bottom border-secondary border-opacity-25 mb-2">
+                    <Link href="/dashboard" className="d-flex flex-column align-items-center justify-content-center text-decoration-none w-100">
                         <img
                             src={CAR_LOGO_URL}
-                            width={34}
-                            height={34}
+                            width={44}
+                            height={44}
                             alt="Autocar"
-                            className="me-2 flex-shrink-0"
+                            className="mb-2"
                         />
-                        <div className="d-flex flex-column text-start overflow-hidden">
-                            <span className="fw-bold text-white fs-3 lh-1 tracking-wide">AUTOCARE</span>
-                            <span className="text-white-50 mt-1" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>ศูนย์บริการซ่อมรถยนต์</span>
-                        </div>
+                        <span className="fw-bold text-white fs-3 lh-1 tracking-wide">AUTOCARE</span>
+                        <span className="text-white-50 mt-1" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>ศูนย์บริการซ่อมรถยนต์</span>
                     </Link>
                 </div>
 
