@@ -42,14 +42,27 @@ export default function ReportStockPage() {
             if (categoryId) params.set('categoryId', categoryId)
             const [spareRes, catRes] = await Promise.all([
                 fetch(`/api/master/spare?${params}`),
-                fetch('/api/master/spare-category')
+                fetch('/api/master/spares-category')
             ])
             const spareJson = await spareRes.json()
             const catJson = await catRes.json()
-            if (spareJson.success) setSpares(spareJson.data || [])
-            if (catJson.success) setCategories(catJson.data || [])
-        } catch { showError('โหลดข้อมูลไม่สำเร็จ') }
-        finally { setLoading(false) }
+
+            if (Array.isArray(spareJson)) {
+                setSpares(spareJson)
+            } else if (spareJson?.success && Array.isArray(spareJson.data)) {
+                setSpares(spareJson.data)
+            }
+
+            if (Array.isArray(catJson)) {
+                setCategories(catJson)
+            } else if (catJson?.success && Array.isArray(catJson.data)) {
+                setCategories(catJson.data)
+            }
+        } catch { 
+            showError('โหลดข้อมูลไม่สำเร็จ') 
+        } finally { 
+            setLoading(false) 
+        }
     }
 
     const filtered = spares.filter(s =>
