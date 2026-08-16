@@ -347,10 +347,17 @@ export default function ServiceJobsPage() {
                                         >
                                             {tab.label}
                                             {statusCounts[tab.key] !== undefined && (
-                                                <span className={`badge ${activeTab === tab.key
-                                                    ? 'bg-white text-dark'
-                                                    : 'bg-secondary'
-                                                    } ms-1`}>
+                                                <span
+                                                    className="badge ms-2"
+                                                    style={{
+                                                        backgroundColor: activeTab === tab.key ? '#ffffff' : '#206bc4',
+                                                        color: activeTab === tab.key ? '#182433' : '#ffffff',
+                                                        fontWeight: 700,
+                                                        fontSize: '0.75rem',
+                                                        padding: '0.2rem 0.5rem',
+                                                        borderRadius: '4px'
+                                                    }}
+                                                >
                                                     {statusCounts[tab.key] || 0}
                                                 </span>
                                             )}
