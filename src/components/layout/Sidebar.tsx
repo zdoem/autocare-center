@@ -71,11 +71,11 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
 
                 /* Submenu item default */
                 .navbar-vertical .dropdown-item {
-                    color: rgba(255, 255, 255, 0.65) !important;
+                    color: rgba(255, 255, 255, 0.7) !important;
                     font-size: 0.86rem !important;
                     padding: 7px 12px !important;
                     border-radius: 6px !important;
-                    transition: all 0.18s ease-in-out !important;
+                    transition: all 0.15s ease-in-out !important;
                     margin-bottom: 3px !important;
                     display: flex !important;
                     align-items: center !important;
@@ -84,21 +84,21 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
                 .navbar-vertical .dropdown-item:hover {
                     background-color: rgba(255, 255, 255, 0.08) !important;
                     color: #ffffff !important;
-                    transform: translateX(2px);
                 }
 
-                /* Active Submenu Item: Soft Tone Highlight */
+                /* Active Submenu Item: Clean solid primary color */
                 .navbar-vertical .dropdown-item.active {
-                    background: rgba(32, 107, 196, 0.28) !important;
-                    color: #79b7ff !important;
-                    font-weight: 600 !important;
-                    border-left: 3px solid #3b82f6 !important;
-                    padding-left: 10px !important;
-                    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+                    background-color: #206bc4 !important;
+                    color: #ffffff !important;
+                    font-weight: 500 !important;
+                    border-radius: 6px !important;
+                    border: none !important;
+                    padding: 7px 12px !important;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
                 }
 
                 .navbar-vertical .dropdown-item.active i {
-                    color: #79b7ff !important;
+                    color: #ffffff !important;
                 }
 
                 /* Active Parent Nav Link */
@@ -108,11 +108,11 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
                 }
 
                 .navbar-vertical .nav-link.active:not(.dropdown-toggle) {
-                    background-color: rgba(32, 107, 196, 0.25) !important;
-                    color: #79b7ff !important;
-                    font-weight: 600 !important;
-                    border-left: 3px solid #3b82f6 !important;
+                    background-color: #206bc4 !important;
+                    color: #ffffff !important;
+                    font-weight: 500 !important;
                     border-radius: 6px !important;
+                    border: none !important;
                 }
                 .navbar-vertical {
                     min-width: 250px !important;
