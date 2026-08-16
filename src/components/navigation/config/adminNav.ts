@@ -58,9 +58,8 @@ export const adminNavItems: NavItem[] = [
         label: 'คลังอะไหล่',
         icon: 'ti-box',
         children: [
-            { label: 'Stock คงเหลือ', icon: 'ti-packages', href: '/inventory/stock' },
+            { label: 'สต็อกและความเคลื่อนไหว', icon: 'ti-packages', href: '/inventory/stock' },
             { label: 'สั่งซื้ออะไหล่', icon: 'ti-shopping-cart', href: '/inventory/purchase' },
-            { label: 'ความเคลื่อนไหว', icon: 'ti-arrows-exchange', href: '/inventory/movement' },
         ],
     },
     {
