@@ -91,10 +91,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const [technicianInput, setTechnicianInput] = useState<string>('')
 
     // Multi-select modal state
-    const [activeTab, setActiveTab] = useState<'SERVICE' | 'SPARE'>('SERVICE')
+    const [activeTab, setActiveTab] = useState<'SERVICE' | 'SPARE' | 'CUSTOM'>('SERVICE')
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([])
     const [submitting, setSubmitting] = useState(false)
+
+    // Custom Item Form State
+    const [customName, setCustomName] = useState('')
+    const [customType, setCustomType] = useState<'SERVICE' | 'SPARE'>('SERVICE')
+    const [customPrice, setCustomPrice] = useState<string>('')
+    const [customQty, setCustomQty] = useState<number>(1)
+    const [customDiscount, setCustomDiscount] = useState<number>(0)
 
     useEffect(() => {
         fetchJob()
@@ -163,22 +170,58 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         }
     }
 
-    const updateSelectedItemField = (itemId: string, field: 'quantity' | 'discount', value: number) => {
+    const handleAddCustomItem = () => {
+        if (!customName.trim()) {
+            showError('กรุณากรอกชื่อบริการหรือรายการ')
+            return
+        }
+        const price = parseFloat(customPrice)
+        if (isNaN(price) || price < 0) {
+            showError('กรุณาระบุราคาที่ถูกต้อง (เช่น 1 บาท หรือมากกว่า)')
+            return
+        }
+        if (customQty <= 0) {
+            showError('กรุณาระบุจำนวนอย่างน้อย 1')
+            return
+        }
+
+        const newItem: SelectedItem = {
+            id: `custom-${Date.now()}`,
+            code: customType === 'SERVICE' ? 'SVC-CUSTOM' : 'PART-CUSTOM',
+            name: customName.trim(),
+            type: customType,
+            quantity: customQty,
+            unitPrice: price,
+            discount: Number(customDiscount) || 0,
+        }
+
+        setSelectedItems(prev => [...prev, newItem])
+        setCustomName('')
+        setCustomPrice('')
+        setCustomQty(1)
+        setCustomDiscount(0)
+    }
+
+    const updateSelectedItemField = (itemId: string, field: 'quantity' | 'discount' | 'unitPrice', value: number) => {
         setSelectedItems(prev => prev.map(s => s.id === itemId ? { ...s, [field]: value } : s))
     }
 
     const getSelectedTotal = () => selectedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice - item.discount), 0)
 
-    const openModal = (tab: 'SERVICE' | 'SPARE' = 'SERVICE') => {
+    const openModal = (tab: 'SERVICE' | 'SPARE' | 'CUSTOM' = 'SERVICE') => {
         setSelectedItems([])
         setSearchQuery('')
         setActiveTab(tab)
+        setCustomName('')
+        setCustomPrice('')
+        setCustomQty(1)
+        setCustomDiscount(0)
         setIsAddItemModalOpen(true)
     }
 
     const handleBatchAddItems = async () => {
         if (selectedItems.length === 0) {
-            showError('กรุณาเลือกอย่างน้อย 1 รายการ')
+            showError('กรุณาเลือกหรือเพิ่มอย่างน้อย 1 รายการ')
             return
         }
         setSubmitting(true)
@@ -190,8 +233,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     serviceJobId: id,
                     items: selectedItems.map(item => ({
                         itemType: item.type,
-                        serviceId: item.type === 'SERVICE' ? item.id : undefined,
-                        spareId: item.type === 'SPARE' ? item.id : undefined,
+                        serviceId: item.id.startsWith('custom-') ? undefined : (item.type === 'SERVICE' ? item.id : undefined),
+                        spareId: item.id.startsWith('custom-') ? undefined : (item.type === 'SPARE' ? item.id : undefined),
                         description: item.name,
                         quantity: item.quantity,
                         unitPrice: item.unitPrice,
@@ -572,7 +615,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     </div>
                 }
             >
-                {/* Tabs: Service / Spare */}
+                {/* Tabs: Service / Spare / Custom */}
                 <div className="mb-3">
                     <ul className="nav nav-tabs">
                         <li className="nav-item">
@@ -581,9 +624,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                 href="#"
                                 onClick={(e) => { e.preventDefault(); setActiveTab('SERVICE'); setSearchQuery('') }}
                             >
-                                <i className="ti ti-tool me-1"></i> ค่าบริการ
-                                {selectedItems.filter(s => s.type === 'SERVICE').length > 0 && (
-                                    <span className="badge bg-blue ms-2">{selectedItems.filter(s => s.type === 'SERVICE').length}</span>
+                                <i className="ti ti-tool me-1"></i> ค่าบริการ (มาตรฐาน)
+                                {selectedItems.filter(s => s.type === 'SERVICE' && !s.id.startsWith('custom-')).length > 0 && (
+                                    <span className="badge bg-blue ms-2">{selectedItems.filter(s => s.type === 'SERVICE' && !s.id.startsWith('custom-')).length}</span>
                                 )}
                             </a>
                         </li>
@@ -593,105 +636,215 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                 href="#"
                                 onClick={(e) => { e.preventDefault(); setActiveTab('SPARE'); setSearchQuery('') }}
                             >
-                                <i className="ti ti-box me-1"></i> อะไหล่
-                                {selectedItems.filter(s => s.type === 'SPARE').length > 0 && (
-                                    <span className="badge bg-orange ms-2">{selectedItems.filter(s => s.type === 'SPARE').length}</span>
+                                <i className="ti ti-box me-1"></i> อะไหล่ (ในคลัง)
+                                {selectedItems.filter(s => s.type === 'SPARE' && !s.id.startsWith('custom-')).length > 0 && (
+                                    <span className="badge bg-orange ms-2">{selectedItems.filter(s => s.type === 'SPARE' && !s.id.startsWith('custom-')).length}</span>
+                                )}
+                            </a>
+                        </li>
+                        <li className="nav-item">
+                            <a
+                                className={`nav-link ${activeTab === 'CUSTOM' ? 'active' : ''}`}
+                                href="#"
+                                onClick={(e) => { e.preventDefault(); setActiveTab('CUSTOM') }}
+                            >
+                                <i className="ti ti-pencil me-1"></i> บริการอื่นๆ / กำหนดเอง
+                                {selectedItems.filter(s => s.id.startsWith('custom-')).length > 0 && (
+                                    <span className="badge bg-purple ms-2">{selectedItems.filter(s => s.id.startsWith('custom-')).length}</span>
                                 )}
                             </a>
                         </li>
                     </ul>
                 </div>
 
-                {/* Search Box */}
-                <div className="mb-3">
-                    <div className="input-icon">
-                        <span className="input-icon-addon"><i className="ti ti-search"></i></span>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder={`ค้นหาด้วยรหัส หรือ ชื่อ${activeTab === 'SERVICE' ? 'บริการ' : 'อะไหล่'}...`}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            autoFocus
-                        />
+                {activeTab === 'CUSTOM' ? (
+                    <div className="card p-3 mb-3 bg-light border-0 shadow-none">
+                        <h4 className="card-title mb-3"><i className="ti ti-pencil me-1 text-primary"></i>ระบุบริการอื่นๆ หรือราคาแบบกำหนดเอง</h4>
+                        <div className="row g-3">
+                            <div className="col-12">
+                                <label className="form-label required">ประเภทรายการ</label>
+                                <div className="form-selectgroup">
+                                    <label className="form-selectgroup-item">
+                                        <input
+                                            type="radio"
+                                            name="customType"
+                                            value="SERVICE"
+                                            className="form-selectgroup-input"
+                                            checked={customType === 'SERVICE'}
+                                            onChange={() => setCustomType('SERVICE')}
+                                        />
+                                        <span className="form-selectgroup-label">
+                                            <i className="ti ti-tool me-1 text-primary"></i>ค่าบริการ / ค่าแรง
+                                        </span>
+                                    </label>
+                                    <label className="form-selectgroup-item">
+                                        <input
+                                            type="radio"
+                                            name="customType"
+                                            value="SPARE"
+                                            className="form-selectgroup-input"
+                                            checked={customType === 'SPARE'}
+                                            onChange={() => setCustomType('SPARE')}
+                                        />
+                                        <span className="form-selectgroup-label">
+                                            <i className="ti ti-box me-1 text-warning"></i>อะไหล่ / วัสดุอื่นๆ
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="col-md-12">
+                                <label className="form-label required">ชื่อบริการ / รายการ</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="เช่น ค่าแรงพิเศษ, ค่าบริการลากรถฉุกเฉิน, งานกลึงจานเบรก, ค่าบริการนอกสถานที่ ฯลฯ"
+                                    value={customName}
+                                    onChange={(e) => setCustomName(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="col-md-6">
+                                <label className="form-label required">ราคาต่อหน่วย (฿)</label>
+                                <div className="input-group">
+                                    <span className="input-group-text">฿</span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="any"
+                                        className="form-control fw-bold fs-3"
+                                        placeholder="เช่น 1 หรือ 500 หรือ 99999999"
+                                        value={customPrice}
+                                        onChange={(e) => setCustomPrice(e.target.value)}
+                                    />
+                                </div>
+                                <small className="text-muted">สามารถใส่ยอดเงินได้ตั้งแต่ 1 บาท ถึง 99,999,999 บาท</small>
+                            </div>
+                            <div className="col-md-3">
+                                <label className="form-label required">จำนวน</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="form-control text-center"
+                                    value={customQty}
+                                    onChange={(e) => setCustomQty(Math.max(1, parseInt(e.target.value) || 1))}
+                                />
+                            </div>
+                            <div className="col-md-3">
+                                <label className="form-label">ส่วนลด (฿)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="form-control text-center"
+                                    value={customDiscount}
+                                    onChange={(e) => setCustomDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                                />
+                            </div>
+                            <div className="col-12 text-end">
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={handleAddCustomItem}
+                                    disabled={!customName.trim() || customPrice === ''}
+                                >
+                                    <i className="ti ti-plus me-1"></i>เพิ่มเข้ารายการที่เลือก
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        {/* Search Box */}
+                        <div className="mb-3">
+                            <div className="input-icon">
+                                <span className="input-icon-addon"><i className="ti ti-search"></i></span>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder={`ค้นหาด้วยรหัส หรือ ชื่อ${activeTab === 'SERVICE' ? 'บริการ' : 'อะไหล่'}...`}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
 
-                {/* Item List Table */}
-                <div className="table-responsive" style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                    <table className="table table-vcenter table-hover">
-                        <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
-                            <tr>
-                                <th style={{ width: '40px' }}></th>
-                                <th style={{ width: '80px' }}>รหัส</th>
-                                <th>ชื่อรายการ</th>
-                                <th className="text-end" style={{ width: '100px' }}>ราคา</th>
-                                <th className="text-center" style={{ width: '90px' }}>จำนวน</th>
-                                <th className="text-end" style={{ width: '110px' }}>รวม</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {getFilteredList().length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="text-center py-4 text-muted">
-                                        {searchQuery ? `ไม่พบรายการที่ตรงกับ "${searchQuery}"` : 'ไม่มีข้อมูล'}
-                                    </td>
-                                </tr>
-                            ) : (
-                                getFilteredList().map((item) => {
-                                    const selected = isItemSelected(item.id)
-                                    const selectedData = selectedItems.find(s => s.id === item.id)
-                                    return (
-                                        <tr
-                                            key={item.id}
-                                            className={selected ? 'bg-primary-lt' : ''}
-                                            style={{ cursor: 'pointer' }}
-                                            onClick={() => toggleItem(item)}
-                                        >
-                                            <td className="text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    className="form-check-input"
-                                                    checked={selected}
-                                                    onChange={() => toggleItem(item)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            </td>
-                                            <td>
-                                                <span className="badge bg-blue-lt text-blue font-monospace">{item.code || '-'}</span>
-                                            </td>
-                                            <td className="fw-medium">{item.name}</td>
-                                            <td className="text-end">{Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                                            <td className="text-center" onClick={(e) => e.stopPropagation()}>
-                                                {selected ? (
-                                                    <input
-                                                        type="number"
-                                                        className="form-control form-control-sm text-center"
-                                                        style={{ width: '70px', margin: '0 auto' }}
-                                                        value={selectedData?.quantity || 1}
-                                                        min={1}
-                                                        onChange={(e) => updateSelectedItemField(item.id, 'quantity', Math.max(1, Number(e.target.value)))}
-                                                    />
-                                                ) : (
-                                                    <span className="text-muted">-</span>
-                                                )}
-                                            </td>
-                                            <td className="text-end fw-bold">
-                                                {selected ? (
-                                                    <span className="text-primary">
-                                                        ฿{((selectedData?.quantity || 1) * Number(item.price)).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-muted">-</span>
-                                                )}
+                        {/* Item List Table */}
+                        <div className="table-responsive" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                            <table className="table table-vcenter table-hover">
+                                <thead style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
+                                    <tr>
+                                        <th style={{ width: '40px' }}></th>
+                                        <th style={{ width: '80px' }}>รหัส</th>
+                                        <th>ชื่อรายการ</th>
+                                        <th className="text-end" style={{ width: '100px' }}>ราคา</th>
+                                        <th className="text-center" style={{ width: '90px' }}>จำนวน</th>
+                                        <th className="text-end" style={{ width: '110px' }}>รวม</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {getFilteredList().length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="text-center py-4 text-muted">
+                                                {searchQuery ? `ไม่พบรายการที่ตรงกับ "${searchQuery}"` : 'ไม่มีข้อมูล'}
                                             </td>
                                         </tr>
-                                    )
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                    ) : (
+                                        getFilteredList().map((item) => {
+                                            const selected = isItemSelected(item.id)
+                                            const selectedData = selectedItems.find(s => s.id === item.id)
+                                            return (
+                                                <tr
+                                                    key={item.id}
+                                                    className={selected ? 'bg-primary-lt' : ''}
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={() => toggleItem(item)}
+                                                >
+                                                    <td className="text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="form-check-input"
+                                                            checked={selected}
+                                                            onChange={() => toggleItem(item)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <span className="badge bg-blue-lt text-blue font-monospace">{item.code || '-'}</span>
+                                                    </td>
+                                                    <td className="fw-medium">{item.name}</td>
+                                                    <td className="text-end">{Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                                                    <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                                                        {selected ? (
+                                                            <input
+                                                                type="number"
+                                                                className="form-control form-control-sm text-center"
+                                                                style={{ width: '70px', margin: '0 auto' }}
+                                                                value={selectedData?.quantity || 1}
+                                                                min={1}
+                                                                onChange={(e) => updateSelectedItemField(item.id, 'quantity', Math.max(1, Number(e.target.value)))}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-muted">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="text-end fw-bold">
+                                                        {selected ? (
+                                                            <span className="text-primary">
+                                                                ฿{((selectedData?.quantity || 1) * Number(item.price)).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-muted">-</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
 
                 {/* Selected Items Summary */}
                 {selectedItems.length > 0 && (
