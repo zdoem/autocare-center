@@ -114,6 +114,17 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
                     border-left: 3px solid #3b82f6 !important;
                     border-radius: 6px !important;
                 }
+                .navbar-vertical {
+                    min-width: 250px !important;
+                    max-width: 250px !important;
+                }
+                .navbar-vertical .navbar-brand {
+                    margin: 0 !important;
+                    padding: 1rem 0.75rem !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: flex-start !important;
+                }
             `}</style>
             <div className="container-fluid">
                 {/* Mobile Toggle */}
@@ -126,19 +137,22 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
-                {/* Logo - แบบ inline ตาม mockup: รูปรถ + ศูนย์บริการซ่อมรถยนต์ (จัด center) */}
-                <h1 className="navbar-brand navbar-brand-autodark w-100 text-center">
-                    <Link href="/dashboard" className="d-inline-flex align-items-center justify-content-center">
+                {/* Logo & Brand Header */}
+                <div className="navbar-brand navbar-brand-autodark px-3 py-3 w-100 text-start border-bottom border-secondary border-opacity-25 mb-1">
+                    <Link href="/dashboard" className="d-flex align-items-center text-decoration-none w-100">
                         <img
                             src={CAR_LOGO_URL}
-                            width={32}
-                            height={32}
+                            width={34}
+                            height={34}
                             alt="Autocar"
-                            className="me-2"
+                            className="me-2 flex-shrink-0"
                         />
-                        <span className="text-white">ศูนย์บริการซ่อมรถยนต์</span>
+                        <div className="d-flex flex-column text-start overflow-hidden">
+                            <span className="fw-bold text-white fs-3 lh-1 tracking-wide">AUTOCARE</span>
+                            <span className="text-white-50 mt-1" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>ศูนย์บริการซ่อมรถยนต์</span>
+                        </div>
                     </Link>
-                </h1>
+                </div>
 
                 {/* Navigation - ใช้ React state จัดการ dropdown */}
                 <div className="navbar-collapse" id="sidebar-menu" style={{ display: 'block' }}>
