@@ -9,7 +9,7 @@
 import { NavItem } from './types'
 
 export const cashierNavItems: NavItem[] = [
-    { label: 'Dashboard', icon: 'ti-home', href: '/dashboard/cashier' },
+    { label: 'Dashboard', icon: 'ti-layout-dashboard', href: '/dashboard/cashier' },
     { label: 'รอชำระเงิน', icon: 'ti-clock', href: '/cash/pending', badge: 3, badgeColor: 'danger' },
     { label: 'รับชำระเงิน', icon: 'ti-cash', href: '/cash/payment' },
     { label: 'ใบเสร็จ', icon: 'ti-receipt', href: '/cash/receipt' },

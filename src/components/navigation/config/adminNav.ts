@@ -11,10 +11,10 @@ import { NavItem } from './types'
 export const adminNavItems: NavItem[] = [
     {
         label: 'Dashboard',
-        icon: 'ti-home',
+        icon: 'ti-layout-dashboard',
         children: [
-            { label: 'Admin Dashboard', icon: 'ti-shield', href: '/dashboard' },
-            { label: 'Technician Dashboard', icon: 'ti-tool', href: '/dashboard/technician' },
+            { label: 'Admin Dashboard', icon: 'ti-chart-pie', href: '/dashboard' },
+            { label: 'Technician Dashboard', icon: 'ti-wrench', href: '/dashboard/technician' },
             { label: 'Cashier Dashboard', icon: 'ti-cash', href: '/dashboard/cashier' },
         ],
     },
