@@ -9,7 +9,7 @@
 import { NavItem } from './types'
 
 export const technicianNavItems: NavItem[] = [
-    { label: 'Dashboard', icon: 'ti-layout-dashboard', href: '/dashboard/technician' },
+    { label: 'Dashboard', icon: 'ti-wrench', href: '/dashboard/technician' },
     { label: 'งานของฉัน', icon: 'ti-clipboard-list', href: '/service/my-jobs', badge: 5, badgeColor: 'primary' },
     { label: 'รายละเอียดงาน', icon: 'ti-file-description', href: '/service/job-detail' },
     { label: 'ดู Stock', icon: 'ti-box', href: '/inventory/stock' },
