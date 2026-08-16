@@ -25,7 +25,6 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
     const pathname = usePathname()
     const navItems = getNavByRole(userRole)
 
-    // เปิด Dashboard เป็นค่าเริ่มต้น
     const [expandedMenus, setExpandedMenus] = useState<string[]>(['Dashboard'])
 
     const toggleMenu = (label: string) => {
@@ -36,11 +35,20 @@ export default function Sidebar({ userRole = 'ADMIN' }: SidebarProps) {
         )
     }
 
-    const isActiveLink = (href: string) => pathname === href
+    // Auto-expand parent menu when pathname matches any child link
+    useEffect(() => {
+        navItems.forEach(item => {
+            if (item.children?.some(child => pathname === child.href || (child.href !== '/' && pathname.startsWith(child.href)))) {
+                setExpandedMenus(prev => (prev.includes(item.label) ? prev : [...prev, item.label]))
+            }
+        })
+    }, [pathname, navItems])
+
+    const isActiveLink = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href))
 
     const isActiveParent = (item: NavItem) => {
         if (item.children) {
-            return item.children.some(child => pathname === child.href)
+            return item.children.some(child => pathname === child.href || (child.href !== '/' && pathname.startsWith(child.href)))
         }
         return false
     }
