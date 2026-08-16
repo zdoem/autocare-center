@@ -319,7 +319,7 @@ export default function InventoryPurchasePage() {
                                     disabled={loading || items.length === 0}
                                     onClick={() => handleSavePO('PENDING')}
                                 >
-                                    <i className="ti ti-device-floppy me-1"></i>บันทึก PO (รอกล่าวรับ)
+                                    <i className="ti ti-file-plus me-1"></i>บันทึก PO (รอตรวจรับสินค้า)
                                 </button>
                                 <button 
                                     className="btn btn-success btn-lg" 
