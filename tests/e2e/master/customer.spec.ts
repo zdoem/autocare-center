@@ -3,6 +3,8 @@ import { TEST_DATA } from '../../fixtures/test-data'
 import { dismissSwalSuccess } from '../../fixtures/test-helpers'
 
 test.describe('Master Data - Customer', () => {
+    test.use({ storageState: 'tests/.auth/admin.json' })
+
     test.beforeEach(async ({ page }) => {
         await page.goto('/master/customer')
         await page.waitForLoadState('domcontentloaded')
