@@ -17,6 +17,11 @@ export default auth((req) => {
     const publicPaths = ['/login', '/forgot-password', '/reset-password', '/api/auth', '/api/master', '/api/ops']
     const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
 
+    // ถ้าเป็น logged in user ที่พยายามเข้าหน้า /login -> redirect ไป /dashboard
+    if (isLoggedIn && pathname === '/login') {
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+
     // ถ้าเป็น public path ให้ผ่านได้เลย
     if (isPublicPath) {
         return NextResponse.next()
