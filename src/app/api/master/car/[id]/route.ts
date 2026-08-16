@@ -98,23 +98,28 @@ export async function GET(
             )
         }
 
-        // Calculate statistics
+        // Calculate statistics safely
+        const serviceJobsList = car.serviceJobs || []
         const stats = {
-            totalVisits: car.serviceJobs.length,
-            totalSpent: car.serviceJobs.reduce((sum, job) => sum + Number(job.grandTotal || 0), 0),
-            lastServiceDate: car.serviceJobs[0]?.jobDate || null,
-            customerSince: car.customer.createdAt,
-            unpaidJobs: car.serviceJobs.filter(job => !job.isPaid).length,
-            inProgressJobs: car.serviceJobs.filter(job =>
+            totalVisits: serviceJobsList.length,
+            totalSpent: serviceJobsList.reduce((sum, job) => sum + Number(job.grandTotal || 0), 0),
+            lastServiceDate: serviceJobsList[0]?.jobDate || null,
+            customerSince: car.customer?.createdAt || null,
+            unpaidJobs: serviceJobsList.filter(job => !job.isPaid).length,
+            inProgressJobs: serviceJobsList.filter(job =>
                 ['PENDING', 'IN_PROGRESS', 'WAITING_PARTS'].includes(job.status)
             ).length
         }
 
         // Calculate maintenance schedule (simplified)
-        const maintenanceSchedule = calculateMaintenanceSchedule(car.mileage || 0, car.serviceJobs)
+        const maintenanceSchedule = calculateMaintenanceSchedule(car.mileage || 0, serviceJobsList)
 
         return NextResponse.json({
             ...car,
+            serviceJobs: serviceJobsList.map(job => ({
+                ...job,
+                totalAmount: Number(job.grandTotal || 0)
+            })),
             stats,
             maintenanceSchedule
         })

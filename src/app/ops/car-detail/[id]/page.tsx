@@ -263,16 +263,16 @@ export default function CarDetailPage() {
                                     <div className="datagrid-item">
                                         <div className="datagrid-title">รหัสรถ</div>
                                         <div className="datagrid-content">
-                                            <span className="badge bg-blue-lt">{car.code}</span>
+                                            <span className="badge bg-blue-lt">{car.code || '-'}</span>
                                         </div>
                                     </div>
                                     <div className="datagrid-item">
                                         <div className="datagrid-title">ยี่ห้อ / รุ่น</div>
                                         <div className="datagrid-content fw-bold">
-                                            {car.carBrand.nameThai || car.carBrand.nameEnglish} {car.carModel.name}
+                                            {car.carBrand?.nameThai || car.carBrand?.nameEnglish || '-'} {car.carModel?.name || ''}
                                         </div>
                                     </div>
-                                    {car.carModel.fuelType && (
+                                    {car.carModel?.fuelType && (
                                         <div className="datagrid-item">
                                             <div className="datagrid-title">เชื้อเพลิง</div>
                                             <div className="datagrid-content">{car.carModel.fuelType}</div>
@@ -290,10 +290,10 @@ export default function CarDetailPage() {
                                             <div className="datagrid-content">{car.color}</div>
                                         </div>
                                     )}
-                                    {car.mileage !== null && (
+                                    {car.mileage !== null && car.mileage !== undefined && (
                                         <div className="datagrid-item">
                                             <div className="datagrid-title">เลขไมล์ล่าสุด</div>
-                                            <div className="datagrid-content">{car.mileage.toLocaleString()} km</div>
+                                            <div className="datagrid-content">{Number(car.mileage).toLocaleString()} km</div>
                                         </div>
                                     )}
                                     {car.vinNumber && (
@@ -319,39 +319,41 @@ export default function CarDetailPage() {
                             </div>
                             <div className="card-body">
                                 <div className="d-flex align-items-center mb-3">
-                                    <span className={`avatar avatar-lg me-3 ${getAvatarColor(car.customer.fullName)}`}>
-                                        {getFirstLetter(car.customer.fullName)}
+                                    <span className={`avatar avatar-lg me-3 ${getAvatarColor(car.customer?.fullName || 'C')}`}>
+                                        {getFirstLetter(car.customer?.fullName || 'C')}
                                     </span>
                                     <div>
-                                        <div className="h3 mb-0">{car.customer.fullName}</div>
+                                        <div className="h3 mb-0">{car.customer?.fullName || 'ไม่ระบุ'}</div>
                                         <span className="badge bg-secondary mt-1">
-                                            {car.customer.customerType.name}
+                                            {car.customer?.customerType?.name || 'ทั่วไป'}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="text-muted mb-3">
-                                    ลูกค้าตั้งแต่ {formatDateThai(car.customer.createdAt)}
+                                    ลูกค้าตั้งแต่ {formatDateThai(car.customer?.createdAt || null)}
                                 </div>
 
                                 <div className="datagrid">
                                     <div className="datagrid-item">
                                         <div className="datagrid-title">รหัสลูกค้า</div>
-                                        <div className="datagrid-content">{car.customer.code}</div>
+                                        <div className="datagrid-content">{car.customer?.code || '-'}</div>
                                     </div>
                                     <div className="datagrid-item">
                                         <div className="datagrid-title">โทรศัพท์</div>
                                         <div className="datagrid-content">
-                                            <a href={`tel:${car.customer.phone}`}>{car.customer.phone}</a>
+                                            {car.customer?.phone ? (
+                                                <a href={`tel:${car.customer.phone}`}>{car.customer.phone}</a>
+                                            ) : '-'}
                                         </div>
                                     </div>
-                                    {car.customer.lineId && (
+                                    {car.customer?.lineId && (
                                         <div className="datagrid-item">
                                             <div className="datagrid-title">LINE ID</div>
                                             <div className="datagrid-content">{car.customer.lineId}</div>
                                         </div>
                                     )}
-                                    {car.customer.email && (
+                                    {car.customer?.email && (
                                         <div className="datagrid-item">
                                             <div className="datagrid-title">อีเมล</div>
                                             <div className="datagrid-content">
@@ -359,7 +361,7 @@ export default function CarDetailPage() {
                                             </div>
                                         </div>
                                     )}
-                                    {car.customer.address && (
+                                    {car.customer?.address && (
                                         <div className="datagrid-item">
                                             <div className="datagrid-title">ที่อยู่</div>
                                             <div className="datagrid-content">{car.customer.address}</div>
@@ -381,7 +383,7 @@ export default function CarDetailPage() {
                                         <div className="text-muted">ครั้งที่มาใช้บริการ</div>
                                     </div>
                                     <div className="col-12 mb-3">
-                                        <div className="h1 mb-0 text-success">฿{totalSpent.toLocaleString()}</div>
+                                        <div className="h1 mb-0 text-success">฿{Number(totalSpent).toLocaleString()}</div>
                                         <div className="text-muted">ยอดรวมทั้งหมด</div>
                                     </div>
                                     <div className="col-12 mb-3">
@@ -428,64 +430,64 @@ export default function CarDetailPage() {
                             </div>
                             <div className="table-responsive">
                                 <table className="table table-vcenter card-table">
-                                    <thead>
+                                <thead>
+                                    <tr>
+                                        <th>วันที่</th>
+                                        <th>เลขงาน</th>
+                                        <th>ไมล์</th>
+                                        <th className="text-end">ยอด</th>
+                                        <th>สถานะ</th>
+                                        <th className="w-1"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredJobs.length === 0 ? (
                                         <tr>
-                                            <th>วันที่</th>
-                                            <th>เลขงาน</th>
-                                            <th>ไมล์</th>
-                                            <th className="text-end">ยอด</th>
-                                            <th>สถานะ</th>
-                                            <th className="w-1"></th>
+                                            <td colSpan={6} className="text-center py-5 text-muted">
+                                                ไม่มีประวัติการซ่อม
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredJobs.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={6} className="text-center py-5 text-muted">
-                                                    ไม่มีประวัติการซ่อม
+                                    ) : (
+                                        filteredJobs.map((job) => (
+                                            <tr key={job.id} className={!job.isPaid ? 'table-warning' : ''}>
+                                                <td>{formatDateThaiShort(job.jobDate)}</td>
+                                                <td>
+                                                    <a href={`/ops/job/${job.id}`} className="text-reset fw-bold">
+                                                        {job.jobNo || job.id}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    {job.mileage ? `${Number(job.mileage).toLocaleString()} km` : '-'}
+                                                </td>
+                                                <td className="text-end">
+                                                    ฿{(Number(job.grandTotal ?? job.totalAmount) || 0).toLocaleString()}
+                                                </td>
+                                                <td>
+                                                    {getStatusBadge(job.status || 'PENDING')}
+                                                    {!job.isPaid && (
+                                                        <span className="badge bg-warning ms-1">ยังไม่ชำระ</span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <button
+                                                        className="btn btn-sm btn-ghost-secondary"
+                                                        onClick={() => router.push(`/ops/job/${job.id}`)}
+                                                        title="ดูรายละเอียด"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                            <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                                                            <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"></path>
+                                                        </svg>
+                                                    </button>
                                                 </td>
                                             </tr>
-                                        ) : (
-                                            filteredJobs.map((job) => (
-                                                <tr key={job.id} className={!job.isPaid ? 'table-warning' : ''}>
-                                                    <td>{formatDateThaiShort(job.jobDate)}</td>
-                                                    <td>
-                                                        <a href={`/ops/job/${job.id}`} className="text-reset fw-bold">
-                                                            {job.jobNo}
-                                                        </a>
-                                                    </td>
-                                                    <td>
-                                                        {job.mileage ? `${job.mileage.toLocaleString()} km` : '-'}
-                                                    </td>
-                                                    <td className="text-end">
-                                                        ฿{job.totalAmount.toLocaleString()}
-                                                    </td>
-                                                    <td>
-                                                        {getStatusBadge(job.status)}
-                                                        {!job.isPaid && (
-                                                            <span className="badge bg-warning ms-1">ยังไม่ชำระ</span>
-                                                        )}
-                                                    </td>
-                                                    <td>
-                                                        <button
-                                                            className="btn btn-sm btn-ghost-secondary"
-                                                            onClick={() => router.push(`/ops/job/${job.id}`)}
-                                                            title="ดูรายละเอียด"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                                                                <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
-                                                                <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"></path>
-                                                            </svg>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
+                    </div>
 
                         {/* Maintenance Schedule */}
                         <div className="card">
