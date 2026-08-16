@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 1. Next.js Web Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autocare_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://pgadmin:P%40ssw0rd@db:5432/db_autocar?schema=public
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=autocar-super-secret-key-2026
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 2. PostgreSQL 15 Database
+  db:
+    image: postgres:15-alpine
+    container_name: autocare_db
+    restart: always
+    environment:
+      POSTGRES_USER: pgadmin
+      POSTGRES_PASSWORD: P@ssw0rd
+      POSTGRES_DB: db_autocar
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pgadmin -d db_autocar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 3. pgAdmin 4 (Database Management Web GUI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: autocare_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: P@ssw0rd
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
