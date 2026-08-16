@@ -43,12 +43,14 @@ const avatarColors = [
     'bg-orange-lt', 'bg-cyan-lt', 'bg-purple-lt'
 ]
 
-const getAvatarColor = (name: string) => {
+const getAvatarColor = (name?: string | null) => {
+    if (!name) return avatarColors[0]
     const index = name.charCodeAt(0) % avatarColors.length
     return avatarColors[index]
 }
 
-const getFirstLetter = (name: string) => {
+const getFirstLetter = (name?: string | null) => {
+    if (!name) return 'C'
     return name.charAt(0)
 }
 
@@ -386,10 +388,10 @@ export default function CustomerPage() {
                                         </td>
                                         <td>
                                             <span className="badge bg-info text-white">
-                                                {item.customerType.name}
+                                                {item.customerType?.name || 'ทั่วไป'}
                                             </span>
                                         </td>
-                                        <td className="text-center">{item._count.cars}</td>
+                                        <td className="text-center">{item._count?.cars || 0}</td>
                                         <td className="text-end">
                                             <a
                                                 href="#"
