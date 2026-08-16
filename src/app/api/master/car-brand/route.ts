@@ -35,27 +35,21 @@ export async function GET(request: NextRequest) {
         }
 
         // Determine orderBy
-        const orderBy: any = { [sortBy]: sortOrder }
+        const validSortFields = ['code', 'nameThai', 'nameEnglish', 'name', 'isActive', 'createdAt', 'updatedAt']
+        const sortField = validSortFields.includes(sortBy) ? sortBy : 'updatedAt'
+        const orderBy = { [sortField]: sortOrder }
 
-        // Use raw query to bypass outdated Prisma Client runtime cache
-        const carBrands = await prisma.$queryRaw`
-            SELECT 
-                cb.id, 
-                cb.code, 
-                cb."nameThai", 
-                cb."nameEnglish", 
-                cb.name, 
-                cb.description, 
-                cb."logoUrl", 
-                cb."isActive", 
-                cb."createdAt", 
-                cb."updatedAt"
-            FROM "car_brands" cb
-            ORDER BY cb."updatedAt" DESC
-        `
+        const carBrands = await prisma.carBrand.findMany({
+            where,
+            orderBy,
+            include: {
+                _count: {
+                    select: { models: true }
+                }
+            }
+        })
 
-        // Map Raw Data (Postgres returns field names exactly as in DB)
-        const data = (carBrands as any[]).map(brand => ({
+        const data = carBrands.map(brand => ({
             id: brand.id,
             code: brand.code,
             nameThai: brand.nameThai,
@@ -66,6 +60,7 @@ export async function GET(request: NextRequest) {
             isActive: brand.isActive,
             createdAt: brand.createdAt,
             updatedAt: brand.updatedAt,
+            modelCount: brand._count?.models || 0,
         }))
 
         return NextResponse.json({
@@ -90,14 +85,17 @@ export async function POST(request: NextRequest) {
         // Validate input
         const validatedData = carBrandSchema.parse(body)
 
-        // Check duplicate nameEnglish with Raw Query
-        const duplicates: any[] = await prisma.$queryRaw`
-            SELECT id FROM "car_brands" 
-            WHERE "nameEnglish" = ${validatedData.nameEnglish} 
-            LIMIT 1
-        `
+        // Check duplicate nameEnglish
+        const existing = await prisma.carBrand.findFirst({
+            where: {
+                OR: [
+                    { nameEnglish: validatedData.nameEnglish },
+                    { name: validatedData.nameEnglish }
+                ]
+            }
+        })
 
-        if (duplicates.length > 0) {
+        if (existing) {
             return NextResponse.json(
                 { success: false, error: 'ยี่ห้อนี้มีอยู่แล้ว' },
                 { status: 400 }
@@ -117,38 +115,25 @@ export async function POST(request: NextRequest) {
             }
         }
         const code = `BR${String(nextId).padStart(3, '0')}`
-        const carBrandId = require('crypto').randomUUID() // Create UUID manually
 
-        // Create car brand with Raw Query
-        await prisma.$executeRaw`
-            INSERT INTO "car_brands" (
-                id, code, "nameThai", "nameEnglish", name, description, "logoUrl", "isActive", "createdAt", "updatedAt"
-            ) VALUES (
-                ${carBrandId},
-                ${code},
-                ${validatedData.nameThai},
-                ${validatedData.nameEnglish},
-                ${validatedData.nameEnglish},
-                ${validatedData.description || null},
-                ${validatedData.logoUrl || null},
-                ${validatedData.isActive ?? true},
-                NOW(),
-                NOW()
-            )
-        `
-
-        // Fetch created data
-        const createdRows = await prisma.$queryRaw`
-            SELECT * FROM "car_brands" WHERE id = ${carBrandId}
-        `
-        const carBrand = (createdRows as any[])[0]
+        // Create car brand with Prisma
+        const carBrand = await prisma.carBrand.create({
+            data: {
+                code,
+                nameThai: validatedData.nameThai,
+                nameEnglish: validatedData.nameEnglish,
+                name: validatedData.nameEnglish,
+                description: validatedData.description || null,
+                logoUrl: validatedData.logoUrl || null,
+                isActive: validatedData.isActive ?? true,
+            }
+        })
 
         return NextResponse.json({
             success: true,
             data: carBrand,
             message: 'เพิ่มยี่ห้อรถเรียบร้อยแล้ว'
         }, { status: 201 })
-
 
     } catch (error) {
         console.error('POST /api/master/car-brand error:', error)

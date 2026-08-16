@@ -28,10 +28,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         const carModel = await prisma.carModel.findUnique({
             where: { id },
-            include
-
-                : {
-                carBrand: true
+            include: {
+                carBrand: true,
+                _count: {
+                    select: { cars: true }
+                }
             }
         })
 
@@ -44,7 +45,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({
             success: true,
-            data: carModel
+            data: {
+                ...carModel,
+                carCount: carModel._count.cars,
+            }
         })
     } catch (error) {
         console.error('GET /api/master/car-model/[id] error:', error)
@@ -69,43 +73,39 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const body = await request.json()
         const validatedData = carModelSchema.parse(body)
 
-        // Check duplicate name in same brand (exclude current) - Use Raw Query
-        const duplicates: any[] = await prisma.$queryRaw`
-            SELECT id FROM "car_models"
-            WHERE name = ${validatedData.name}
-            AND "carBrandId" = ${validatedData.carBrandId}
-            AND id != ${id}
-            LIMIT 1
-        `
+        // Check duplicate name in same brand (exclude current)
+        const duplicate = await prisma.carModel.findFirst({
+            where: {
+                name: validatedData.name,
+                carBrandId: validatedData.carBrandId,
+                NOT: { id }
+            }
+        })
 
-        if (duplicates.length > 0) {
+        if (duplicate) {
             return NextResponse.json(
                 { success: false, error: 'รุ่นรถนี้มีอยู่แล้วในยี่ห้อเดียวกัน' },
                 { status: 400 }
             )
         }
 
-        // Update with Raw Query
-        await prisma.$executeRaw`
-            UPDATE "car_models"
-            SET 
-                name = ${validatedData.name},
-                "carBrandId" = ${validatedData.carBrandId},
-                description = ${validatedData.description || null},
-                "yearStart" = ${validatedData.yearStart || null},
-                "yearEnd" = ${validatedData.yearEnd || null},
-                "vehicleType" = ${validatedData.vehicleType || null},
-                "fuelType" = ${validatedData.fuelType || null},
-                "isActive" = ${validatedData.isActive ?? true},
-                "updatedAt" = NOW()
-            WHERE id = ${id}
-        `
-
-        // Fetch updated data
-        const updatedRows = await prisma.$queryRaw`
-            SELECT * FROM "car_models" WHERE id = ${id}
-        `
-        const carModel = (updatedRows as any[])[0]
+        // Update with Prisma
+        const carModel = await prisma.carModel.update({
+            where: { id },
+            data: {
+                name: validatedData.name,
+                carBrandId: validatedData.carBrandId,
+                description: validatedData.description || null,
+                yearStart: validatedData.yearStart || null,
+                yearEnd: validatedData.yearEnd || null,
+                vehicleType: validatedData.vehicleType || null,
+                fuelType: validatedData.fuelType || null,
+                isActive: validatedData.isActive ?? true,
+            },
+            include: {
+                carBrand: true,
+            }
+        })
 
         return NextResponse.json({
             success: true,
@@ -141,17 +141,34 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             )
         }
 
-        // Hard Delete with Raw Query
-        const result = await prisma.$executeRaw`
-            DELETE FROM "car_models" WHERE id = ${id}
-        `
+        // Check if exists
+        const existing = await prisma.carModel.findUnique({
+            where: { id },
+            include: {
+                _count: {
+                    select: { cars: true }
+                }
+            }
+        })
 
-        if (result === 0) {
+        if (!existing) {
             return NextResponse.json(
                 { success: false, error: 'ไม่พบข้อมูลรุ่นรถ' },
                 { status: 404 }
             )
         }
+
+        // Check if in use
+        if (existing._count.cars > 0) {
+            return NextResponse.json(
+                { success: false, error: `ไม่สามารถลบได้ เนื่องจากมีรถยนต์ที่ใช้รุ่นนี้อยู่ ${existing._count.cars} คัน` },
+                { status: 400 }
+            )
+        }
+
+        await prisma.carModel.delete({
+            where: { id }
+        })
 
         return NextResponse.json({
             success: true,
