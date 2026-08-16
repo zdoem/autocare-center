@@ -55,7 +55,7 @@ export default function PendingPaymentPage() {
     const fetchData = async () => {
         setLoading(true)
         try {
-            const res = await fetch('/api/ops/job?status=WAITING_PAYMENT&limit=100')
+            const res = await fetch('/api/ops/job?isPaid=false&limit=100')
             const json = await res.json()
             if (json.success) {
                 setPendingJobs(json.data || [])

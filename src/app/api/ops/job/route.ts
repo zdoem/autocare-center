@@ -32,6 +32,11 @@ export async function GET(request: NextRequest) {
             }
         }
 
+        const isPaid = searchParams.get('isPaid')
+        if (isPaid !== null && isPaid !== undefined) {
+            where.isPaid = isPaid === 'true'
+        }
+
         const [total, jobs] = await Promise.all([
             prisma.serviceJob.count({ where }),
             prisma.serviceJob.findMany({
