@@ -25,6 +25,17 @@ export async function POST(request: NextRequest) {
         const body = await request.json()
         const validated = batchItemSchema.parse(body)
 
+        const currentJob = await prisma.serviceJob.findUnique({
+            where: { id: validated.serviceJobId },
+            select: { status: true }
+        })
+        if (!currentJob) {
+            return NextResponse.json({ error: 'ไม่พบงานซ่อมนี้' }, { status: 404 })
+        }
+        if (['COMPLETED', 'DELIVERED', 'CANCELLED'].includes(currentJob.status)) {
+            return NextResponse.json({ error: 'ไม่สามารถแก้ไขหรือเพิ่มรายการในงานซ่อมที่ปิดงานหรือยกเลิกแล้ว' }, { status: 400 })
+        }
+
         const result = await prisma.$transaction(async (tx) => {
             // 1. Create all items
             const createdItems = []

@@ -23,6 +23,14 @@ export async function DELETE(
             return NextResponse.json({ error: 'Item not found' }, { status: 404 })
         }
 
+        const job = await prisma.serviceJob.findUnique({
+            where: { id: item.serviceJobId },
+            select: { status: true }
+        })
+        if (job && ['COMPLETED', 'DELIVERED', 'CANCELLED'].includes(job.status)) {
+            return NextResponse.json({ error: 'ไม่สามารถลบรายการในงานซ่อมที่ปิดงานหรือยกเลิกแล้ว' }, { status: 400 })
+        }
+
         const jobId = item.serviceJobId
 
         await prisma.serviceJobItem.delete({

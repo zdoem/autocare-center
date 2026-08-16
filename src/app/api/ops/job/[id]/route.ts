@@ -64,6 +64,23 @@ export async function PUT(
         const body = await request.json()
         const validatedData = serviceJobUpdateSchema.parse(body)
 
+        const currentJob = await prisma.serviceJob.findUnique({
+            where: { id },
+            select: { status: true }
+        })
+        if (!currentJob) {
+            return NextResponse.json({ error: 'ไม่พบข้อมูลงานซ่อม' }, { status: 404 })
+        }
+        if (currentJob.status === 'CANCELLED') {
+            return NextResponse.json({ error: 'ไม่สามารถแก้ไขงานซ่อมที่ถูกยกเลิกแล้ว' }, { status: 400 })
+        }
+        if (currentJob.status === 'DELIVERED') {
+            return NextResponse.json({ error: 'ไม่สามารถแก้ไขงานซ่อมที่ส่งมอบรถเรียบร้อยแล้ว' }, { status: 400 })
+        }
+        if (currentJob.status === 'COMPLETED' && validatedData.status && validatedData.status !== 'DELIVERED' && validatedData.status !== 'COMPLETED') {
+            return NextResponse.json({ error: 'งานซ่อมที่ปิดงานแล้ว สามารถเปลี่ยนเป็นสถานะส่งมอบรถ (DELIVERED) ได้เท่านั้น' }, { status: 400 })
+        }
+
         const job = await prisma.serviceJob.update({
             where: { id },
             data: {

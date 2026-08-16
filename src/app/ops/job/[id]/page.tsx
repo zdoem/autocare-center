@@ -311,12 +311,51 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     // Separate services and spares for the 2 tables
     const serviceItems = job.items.filter(item => item.itemType === 'SERVICE')
     const spareItems = job.items.filter(item => item.itemType === 'SPARE')
+    const isReadOnly = job.status === 'COMPLETED' || job.status === 'DELIVERED' || job.status === 'CANCELLED'
 
     return (
         <MainLayout
             title={<><i className="ti ti-tools me-2"></i>รายละเอียดงานซ่อม ({job.jobNo})</>}
             pretitle="Operations / Job Detail"
         >
+            {/* Read-Only Status Banner */}
+            {job.status === 'COMPLETED' && (
+                <div className="p-3 mb-3 bg-success-lt text-success rounded-3 border border-success-subtle d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                        <i className="ti ti-circle-check fs-2 me-2"></i>
+                        <div>
+                            <strong>งานซ่อมนี้ปิดงานและชำระเงินเรียบร้อยแล้ว (View Only)</strong>
+                            <div className="small">สามารถดูรายละเอียดและพิมพ์เอกสารได้ ปิดการแก้ไขและเพิ่มรายการทั้งหมด</div>
+                        </div>
+                    </div>
+                    <span className="badge bg-green text-white">ปิดงานแล้ว</span>
+                </div>
+            )}
+            {job.status === 'DELIVERED' && (
+                <div className="p-3 mb-3 bg-lime-lt text-lime rounded-3 border border-lime-subtle d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                        <i className="ti ti-car fs-2 me-2"></i>
+                        <div>
+                            <strong>ส่งมอบรถให้ลูกค้าเรียบร้อยแล้ว (View Only)</strong>
+                            <div className="small">งานซ่อมเสร็จสมบูรณ์ ปิดการแก้ไขทั้งหมด</div>
+                        </div>
+                    </div>
+                    <span className="badge bg-lime text-white">ส่งมอบแล้ว</span>
+                </div>
+            )}
+            {job.status === 'CANCELLED' && (
+                <div className="p-3 mb-3 bg-secondary-lt text-secondary rounded-3 border border-secondary-subtle d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                        <i className="ti ti-circle-x fs-2 me-2"></i>
+                        <div>
+                            <strong>งานซ่อมนี้ถูกยกเลิกแล้ว (View Only)</strong>
+                            <div className="small">ไม่สามารถแก้ไขรายการหรือเริ่มงานใหม่ได้</div>
+                        </div>
+                    </div>
+                    <span className="badge bg-secondary text-white">ยกเลิกแล้ว</span>
+                </div>
+            )}
+
             <div className="row">
                 {/* Left Column */}
                 <div className="col-lg-8">
@@ -380,11 +419,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     <div className="card mb-3">
                         <div className="card-header">
                             <h3 className="card-title"><i className="ti ti-list-check me-2"></i>รายการซ่อม/บริการ</h3>
-                            <div className="card-actions">
-                                <button className="btn btn-sm btn-primary" onClick={() => openModal('SERVICE')}>
-                                    <i className="ti ti-plus me-1"></i>เพิ่มรายการ
-                                </button>
-                            </div>
+                            {!isReadOnly && (
+                                <div className="card-actions">
+                                    <button className="btn btn-sm btn-primary" onClick={() => openModal('SERVICE')}>
+                                        <i className="ti ti-plus me-1"></i>เพิ่มรายการ
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div className="table-responsive">
                             <table className="table table-vcenter card-table">
@@ -394,12 +435,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         <th className="text-end">ราคา/หน่วย</th>
                                         <th className="text-center">จำนวน</th>
                                         <th className="text-end">รวม</th>
-                                        <th style={{ width: '50px' }}></th>
+                                        {!isReadOnly && <th style={{ width: '50px' }}></th>}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {serviceItems.length === 0 ? (
-                                        <tr><td colSpan={5} className="text-center text-muted py-3">ยังไม่มีรายการ</td></tr>
+                                        <tr><td colSpan={isReadOnly ? 4 : 5} className="text-center text-muted py-3">ยังไม่มีรายการ</td></tr>
                                     ) : (
                                         serviceItems.map(item => (
                                             <tr key={item.id}>
@@ -407,11 +448,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                 <td className="text-end">฿{Number(item.unitPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
                                                 <td className="text-center">{item.quantity}</td>
                                                 <td className="text-end">฿{Number(item.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                                                <td>
-                                                    <a href="#" className="btn btn-ghost-danger btn-icon btn-sm" onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}>
-                                                        <i className="ti ti-trash"></i>
-                                                    </a>
-                                                </td>
+                                                {!isReadOnly && (
+                                                    <td>
+                                                        <a href="#" className="btn btn-ghost-danger btn-icon btn-sm" onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}>
+                                                            <i className="ti ti-trash"></i>
+                                                        </a>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))
                                     )}
@@ -424,11 +467,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     <div className="card mb-3">
                         <div className="card-header">
                             <h3 className="card-title"><i className="ti ti-package me-2"></i>อะไหล่ที่ใช้</h3>
-                            <div className="card-actions">
-                                <button className="btn btn-sm btn-outline-primary" onClick={() => openModal('SPARE')}>
-                                    <i className="ti ti-plus me-1"></i>เพิ่มอะไหล่
-                                </button>
-                            </div>
+                            {!isReadOnly && (
+                                <div className="card-actions">
+                                    <button className="btn btn-sm btn-outline-primary" onClick={() => openModal('SPARE')}>
+                                        <i className="ti ti-plus me-1"></i>เพิ่มอะไหล่
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div className="table-responsive">
                             <table className="table table-vcenter card-table">
@@ -438,12 +483,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         <th className="text-end">ราคา/หน่วย</th>
                                         <th className="text-center">จำนวน</th>
                                         <th className="text-end">รวม</th>
-                                        <th style={{ width: '50px' }}></th>
+                                        {!isReadOnly && <th style={{ width: '50px' }}></th>}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {spareItems.length === 0 ? (
-                                        <tr><td colSpan={5} className="text-center text-muted py-3">ยังไม่มีรายการอะไหล่</td></tr>
+                                        <tr><td colSpan={isReadOnly ? 4 : 5} className="text-center text-muted py-3">ยังไม่มีรายการอะไหล่</td></tr>
                                     ) : (
                                         spareItems.map(item => (
                                             <tr key={item.id}>
@@ -451,11 +496,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                 <td className="text-end">฿{Number(item.unitPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
                                                 <td className="text-center">{item.quantity}</td>
                                                 <td className="text-end">฿{Number(item.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                                                <td>
-                                                    <a href="#" className="btn btn-ghost-danger btn-icon btn-sm" onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}>
-                                                        <i className="ti ti-trash"></i>
-                                                    </a>
-                                                </td>
+                                                {!isReadOnly && (
+                                                    <td>
+                                                        <a href="#" className="btn btn-ghost-danger btn-icon btn-sm" onClick={(e) => { e.preventDefault(); handleDeleteItem(item.id) }}>
+                                                            <i className="ti ti-trash"></i>
+                                                        </a>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))
                                     )}
@@ -479,37 +526,56 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     {/* Status Update Card */}
                     <div className="card mb-3">
                         <div className="card-header">
-                            <h3 className="card-title">สถานะงาน</h3>
+                            <h3 className="card-title">{isReadOnly ? 'สถานะงาน (ปิดการแก้ไข)' : 'สถานะงาน'}</h3>
                         </div>
                         <div className="card-body">
-                            <div className="mb-3">
-                                <label className="form-label">สถานะ</label>
-                                <select className="form-select" value={statusInput} onChange={(e) => setStatusInput(e.target.value)}>
-                                    <option value="RECEIVED">รอรับรถ / รับรถแล้ว</option>
-                                    <option value="WAITING_APPROVAL">รออนุมัติ</option>
-                                    <option value="APPROVED">อนุมัติแล้ว</option>
-                                    <option value="IN_PROGRESS">กำลังซ่อม</option>
-                                    <option value="INSPECTION">ตรวจสอบ</option>
-                                    <option value="WAITING_PARTS">รออะไหล่</option>
-                                    <option value="QC_CHECK">QC ตรวจสอบ</option>
-                                    <option value="WAITING_PAYMENT">รอชำระเงิน</option>
-                                    <option value="COMPLETED">เสร็จสิ้น</option>
-                                    <option value="DELIVERED">ส่งมอบแล้ว</option>
-                                    <option value="CANCELLED">ยกเลิก</option>
-                                </select>
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">ช่างผู้รับผิดชอบ</label>
-                                <select className="form-select" value={technicianInput} onChange={(e) => setTechnicianInput(e.target.value)}>
-                                    <option value="">-- ไม่ระบุ --</option>
-                                    {technicians.map(t => (
-                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <button className="btn btn-primary w-100" onClick={handleSaveStatus}>
-                                <i className="ti ti-device-floppy me-1"></i>บันทึกสถานะ
-                            </button>
+                            {isReadOnly ? (
+                                <div>
+                                    <div className="mb-3">
+                                        <label className="form-label text-muted">สถานะปัจจุบัน</label>
+                                        <div>
+                                            {job.status === 'COMPLETED' && <span className="badge bg-green fs-4 py-2 px-3"><i className="ti ti-circle-check me-1"></i>เสร็จสิ้น (COMPLETED)</span>}
+                                            {job.status === 'DELIVERED' && <span className="badge bg-lime fs-4 py-2 px-3"><i className="ti ti-car me-1"></i>ส่งมอบรถแล้ว (DELIVERED)</span>}
+                                            {job.status === 'CANCELLED' && <span className="badge bg-secondary fs-4 py-2 px-3"><i className="ti ti-x me-1"></i>ยกเลิก (CANCELLED)</span>}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="form-label text-muted">ช่างผู้รับผิดชอบ</label>
+                                        <div className="fw-bold">{job.technician?.fullName || technicians.find(t => t.id === job.technicianId)?.name || '-'}</div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="mb-3">
+                                        <label className="form-label">สถานะ</label>
+                                        <select className="form-select" value={statusInput} onChange={(e) => setStatusInput(e.target.value)}>
+                                            <option value="RECEIVED">รอรับรถ / รับรถแล้ว</option>
+                                            <option value="WAITING_APPROVAL">รออนุมัติ</option>
+                                            <option value="APPROVED">อนุมัติแล้ว</option>
+                                            <option value="IN_PROGRESS">กำลังซ่อม</option>
+                                            <option value="INSPECTION">ตรวจสอบ</option>
+                                            <option value="WAITING_PARTS">รออะไหล่</option>
+                                            <option value="QC_CHECK">QC ตรวจสอบ</option>
+                                            <option value="WAITING_PAYMENT">รอชำระเงิน</option>
+                                            <option value="COMPLETED">เสร็จสิ้น</option>
+                                            <option value="DELIVERED">ส่งมอบแล้ว</option>
+                                            <option value="CANCELLED">ยกเลิก</option>
+                                        </select>
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">ช่างผู้รับผิดชอบ</label>
+                                        <select className="form-select" value={technicianInput} onChange={(e) => setTechnicianInput(e.target.value)}>
+                                            <option value="">-- ไม่ระบุ --</option>
+                                            {technicians.map(t => (
+                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button className="btn btn-primary w-100" onClick={handleSaveStatus}>
+                                        <i className="ti ti-device-floppy me-1"></i>บันทึกสถานะ
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -550,17 +616,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
                     {/* Actions */}
                     <div className="d-grid gap-2">
-                        {(job.status === 'RECEIVED' || job.status === 'APPROVED' || job.status === 'WAITING_APPROVAL') && (
+                        {!isReadOnly && (job.status === 'RECEIVED' || job.status === 'APPROVED' || job.status === 'WAITING_APPROVAL') && (
                             <button className="btn btn-primary btn-lg" onClick={() => handlePrimaryAction('IN_PROGRESS')}>
                                 <i className="ti ti-player-play me-1"></i>เริ่มงานซ่อม
                             </button>
                         )}
-                        {(job.status === 'IN_PROGRESS' || job.status === 'INSPECTION' || job.status === 'WAITING_PARTS' || job.status === 'QC_CHECK') && (
+                        {!isReadOnly && (job.status === 'IN_PROGRESS' || job.status === 'INSPECTION' || job.status === 'WAITING_PARTS' || job.status === 'QC_CHECK') && (
                             <button className="btn btn-success btn-lg" onClick={() => handlePrimaryAction('WAITING_PAYMENT')}>
                                 <i className="ti ti-check me-1"></i>เสร็จงาน / ส่งชำระ
                             </button>
                         )}
-                        {job.status === 'WAITING_PAYMENT' && (
+                        {!isReadOnly && job.status === 'WAITING_PAYMENT' && (
                             <button className="btn btn-orange btn-lg" onClick={() => router.push(`/cash/payment?jobId=${job.id}`)}>
                                 <i className="ti ti-cash me-1"></i>ไปหน้ารับชำระเงิน
                             </button>
@@ -571,8 +637,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             </button>
                         )}
 
+                        {(job.status === 'COMPLETED' || job.status === 'DELIVERED') && (
+                            <button className="btn btn-success" onClick={() => window.open(`/ops/job/print/${job.id}?type=receipt`, '_blank')}>
+                                <i className="ti ti-receipt me-1"></i>พิมพ์ใบเสร็จรับเงิน
+                            </button>
+                        )}
                         <button className="btn btn-outline-secondary" onClick={() => window.open(`/ops/job/print/${job.id}?type=quotation`, '_blank')}>
-                            <i className="ti ti-printer me-1"></i>พิมพ์ใบเสนอราคา
+                            <i className="ti ti-printer me-1"></i>พิมพ์ใบเสนอราคา / ใบสั่งงาน
                         </button>
                     </div>
                 </div>
