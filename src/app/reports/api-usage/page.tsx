@@ -2,7 +2,32 @@
 
 import { useState, useEffect } from 'react'
 import MainLayout from '@/components/layout/MainLayout'
-import { showError, showSuccess } from '@/components/ui'
+import { showError } from '@/components/ui'
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement,
+    PointElement,
+    LineElement,
+} from 'chart.js'
+import { Bar, Doughnut } from 'react-chartjs-2'
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement,
+    PointElement,
+    LineElement
+)
 
 interface ApiUsageLog {
     id: string
@@ -115,7 +140,7 @@ export default function ApiUsageReportPage() {
     const getStatusBadge = (code: number) => {
         if (code >= 200 && code < 300) return <span className="badge bg-green text-white font-monospace">{code} OK</span>
         if (code >= 300 && code < 400) return <span className="badge bg-blue text-white font-monospace">{code}</span>
-        if (code >= 400 && code < 500) return <span className="badge bg-yellow text-white font-monospace">{code} Bad Request</span>
+        if (code >= 400 && code < 500) return <span className="badge bg-warning text-white font-monospace">{code} Bad Req</span>
         return <span className="badge bg-danger text-white font-monospace">{code} Error</span>
     }
 
@@ -123,6 +148,82 @@ export default function ApiUsageReportPage() {
         if (ms < 100) return <span className="badge bg-green-lt text-green font-monospace fw-bold">{ms} ms</span>
         if (ms < 300) return <span className="badge bg-yellow-lt text-yellow font-monospace fw-bold">{ms} ms</span>
         return <span className="badge bg-danger-lt text-danger font-monospace fw-bold">{ms} ms</span>
+    }
+
+    // Chart Data 1: Top Endpoints Calls & Latency
+    const topEndpointsData = {
+        labels: metrics?.topEndpoints.slice(0, 6).map(e => e.endpoint.length > 22 ? e.endpoint.slice(0, 20) + '...' : e.endpoint) || [],
+        datasets: [
+            {
+                label: 'จำนวนครั้งที่เรียก (Calls)',
+                data: metrics?.topEndpoints.slice(0, 6).map(e => e.count) || [],
+                backgroundColor: 'rgba(32, 107, 196, 0.85)',
+                borderColor: '#206bc4',
+                borderWidth: 1,
+                borderRadius: 4,
+                yAxisID: 'y',
+            },
+            {
+                label: 'เวลาตอบสนองเฉลี่ย (ms)',
+                data: metrics?.topEndpoints.slice(0, 6).map(e => e.avgLatency) || [],
+                backgroundColor: 'rgba(247, 103, 7, 0.85)',
+                borderColor: '#f76707',
+                borderWidth: 1,
+                borderRadius: 4,
+                yAxisID: 'y1',
+            }
+        ]
+    }
+
+    const topEndpointsOptions: any = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top' as const },
+            tooltip: { mode: 'index' as const, intersect: false }
+        },
+        scales: {
+            x: { grid: { display: false } },
+            y: {
+                type: 'linear' as const,
+                display: true,
+                position: 'left' as const,
+                title: { display: true, text: 'จำนวนครั้ง (Calls)' },
+            },
+            y1: {
+                type: 'linear' as const,
+                display: true,
+                position: 'right' as const,
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Latency (ms)' },
+            }
+        }
+    }
+
+    // Chart Data 2: Status Code Doughnut
+    const statusCodeData = {
+        labels: ['2xx สำเร็จ (Success)', '4xx Client Error', '5xx Server Error'],
+        datasets: [
+            {
+                data: [
+                    metrics?.status2xx || (metrics?.totalRequests ? metrics.totalRequests : 1),
+                    metrics?.status4xx || 0,
+                    metrics?.status5xx || 0,
+                ],
+                backgroundColor: ['#2fb344', '#f59f00', '#d63939'],
+                borderColor: ['#ffffff', '#ffffff', '#ffffff'],
+                borderWidth: 2,
+            }
+        ]
+    }
+
+    const statusCodeOptions: any = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom' as const }
+        },
+        cutout: '70%',
     }
 
     return (
@@ -204,111 +305,98 @@ export default function ApiUsageReportPage() {
                 </div>
             </div>
 
-            {/* Middle Section: Top Active Endpoints & Slowest Endpoints */}
+            {/* 📊 Interactive Charts Row */}
             <div className="row g-3 mb-3">
-                {/* Most Active Endpoints */}
-                <div className="col-lg-7">
+                {/* Chart 1: Bar Chart of Top Endpoints & Latency */}
+                <div className="col-lg-8">
                     <div className="card h-100">
-                        <div className="card-header">
-                            <h3 className="card-title"><i className="ti ti-chart-bar me-2 text-primary"></i>10 อันดับ API ที่ถูกเรียกใช้งานสูงสุด</h3>
+                        <div className="card-header d-flex justify-content-between align-items-center">
+                            <h3 className="card-title">
+                                <i className="ti ti-chart-bar me-2 text-primary"></i>
+                                กราฟแสดงความถี่การเรียกใช้งานและเวลาตอบสนอง (Top API Endpoints & Latency)
+                            </h3>
+                            <span className="badge bg-blue-lt">Real-time Telemetry</span>
                         </div>
-                        <div className="table-responsive">
-                            <table className="table table-vcenter card-table">
-                                <thead>
-                                    <tr>
-                                        <th style={{ width: '80px' }}>Method</th>
-                                        <th>Endpoint Path</th>
-                                        <th className="text-center" style={{ width: '90px' }}>จำนวนครั้ง</th>
-                                        <th className="text-center" style={{ width: '100px' }}>เวลาเฉลี่ย</th>
-                                        <th className="text-center" style={{ width: '90px' }}>Error Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {!metrics || metrics.topEndpoints.length === 0 ? (
-                                        <tr><td colSpan={5} className="text-center text-muted py-3">ยังไม่มีข้อมูลสถิติ</td></tr>
-                                    ) : (
-                                        metrics.topEndpoints.map((item, idx) => (
-                                            <tr key={idx}>
-                                                <td>
-                                                    <span className={`badge ${METHOD_COLORS[item.method] || 'bg-secondary'}`}>
-                                                        {item.method}
-                                                    </span>
-                                                </td>
-                                                <td><code className="text-dark">{item.endpoint}</code></td>
-                                                <td className="text-center fw-bold">{item.count.toLocaleString()}</td>
-                                                <td className="text-center">{getLatencyBadge(item.avgLatency)}</td>
-                                                <td className="text-center">
-                                                    <span className={`badge ${item.errorRate > 0 ? 'bg-danger text-white' : 'bg-green-lt text-green'}`}>
-                                                        {item.errorRate}%
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                        <div className="card-body">
+                            <div style={{ height: '280px' }}>
+                                <Bar data={topEndpointsData} options={topEndpointsOptions} />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* HTTP Status Code Distribution */}
-                <div className="col-lg-5">
+                {/* Chart 2: Doughnut Chart of HTTP Status Codes */}
+                <div className="col-lg-4">
                     <div className="card h-100">
                         <div className="card-header">
-                            <h3 className="card-title"><i className="ti ti-heart-rate-monitor me-2 text-success"></i>สถานะการตอบกลับ (HTTP Status Breakdown)</h3>
+                            <h3 className="card-title">
+                                <i className="ti ti-chart-pie me-2 text-success"></i>
+                                สัดส่วนสถานะการตอบกลับ (HTTP Status)
+                            </h3>
                         </div>
-                        <div className="card-body">
-                            <div className="mb-3">
-                                <div className="d-flex justify-content-between mb-1">
-                                    <span className="fw-medium text-success">🟢 2xx สำเร็จ (Success)</span>
-                                    <span className="fw-bold">{metrics?.status2xx || 0} ครั้ง</span>
-                                </div>
-                                <div className="progress" style={{ height: '8px' }}>
-                                    <div
-                                        className="progress-bar bg-success"
-                                        style={{ width: `${metrics?.totalRequests ? ((metrics.status2xx / metrics.totalRequests) * 100) : 100}%` }}
-                                    ></div>
-                                </div>
+                        <div className="card-body d-flex flex-column align-items-center justify-content-center">
+                            <div style={{ height: '210px', width: '100%' }}>
+                                <Doughnut data={statusCodeData} options={statusCodeOptions} />
                             </div>
-
-                            <div className="mb-3">
-                                <div className="d-flex justify-content-between mb-1">
-                                    <span className="fw-medium text-warning">🟡 4xx Client Error (Not Found / Bad Request)</span>
-                                    <span className="fw-bold">{metrics?.status4xx || 0} ครั้ง</span>
+                            <div className="d-flex justify-content-around w-100 mt-2 text-center small">
+                                <div>
+                                    <div className="text-success fw-bold">{metrics?.status2xx || 0}</div>
+                                    <span className="text-muted">2xx สำเร็จ</span>
                                 </div>
-                                <div className="progress" style={{ height: '8px' }}>
-                                    <div
-                                        className="progress-bar bg-warning"
-                                        style={{ width: `${metrics?.totalRequests ? ((metrics.status4xx / metrics.totalRequests) * 100) : 0}%` }}
-                                    ></div>
+                                <div>
+                                    <div className="text-warning fw-bold">{metrics?.status4xx || 0}</div>
+                                    <span className="text-muted">4xx ผิดพลาด</span>
                                 </div>
-                            </div>
-
-                            <div className="mb-3">
-                                <div className="d-flex justify-content-between mb-1">
-                                    <span className="fw-medium text-danger">🔴 5xx Server Error (Internal Errors)</span>
-                                    <span className="fw-bold">{metrics?.status5xx || 0} ครั้ง</span>
-                                </div>
-                                <div className="progress" style={{ height: '8px' }}>
-                                    <div
-                                        className="progress-bar bg-danger"
-                                        style={{ width: `${metrics?.totalRequests ? ((metrics.status5xx / metrics.totalRequests) * 100) : 0}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            <hr className="my-3" />
-
-                            <div className="alert alert-info mb-0">
-                                <div className="d-flex">
-                                    <i className="ti ti-info-circle fs-2 me-2"></i>
-                                    <div className="small">
-                                        ระบบมีการจับสถิติเวลาตอบสนอง (Latency) และสถานะการเรียกใช้งาน API ทุก Request โดยไม่กระทบต่อความเร็วของระบบ
-                                    </div>
+                                <div>
+                                    <div className="text-danger fw-bold">{metrics?.status5xx || 0}</div>
+                                    <span className="text-muted">5xx ระบบล่ม</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Table of Top 10 Most Active Endpoints */}
+            <div className="card mb-3">
+                <div className="card-header">
+                    <h3 className="card-title"><i className="ti ti-list-numbers me-2 text-primary"></i>ตารางแจกแจง 10 อันดับ API ที่ถูกเรียกใช้งานสูงสุด</h3>
+                </div>
+                <div className="table-responsive">
+                    <table className="table table-vcenter table-hover card-table">
+                        <thead>
+                            <tr>
+                                <th style={{ width: '80px' }}>Method</th>
+                                <th>Endpoint Path</th>
+                                <th className="text-center" style={{ width: '110px' }}>จำนวนครั้งที่เรียก</th>
+                                <th className="text-center" style={{ width: '120px' }}>เวลาเฉลี่ย (Latency)</th>
+                                <th className="text-center" style={{ width: '100px' }}>อัตรา Error</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {!metrics || metrics.topEndpoints.length === 0 ? (
+                                <tr><td colSpan={5} className="text-center text-muted py-3">ยังไม่มีข้อมูลสถิติ</td></tr>
+                            ) : (
+                                metrics.topEndpoints.map((item, idx) => (
+                                    <tr key={idx}>
+                                        <td>
+                                            <span className={`badge ${METHOD_COLORS[item.method] || 'bg-secondary'}`}>
+                                                {item.method}
+                                            </span>
+                                        </td>
+                                        <td><code className="text-dark fw-bold">{item.endpoint}</code></td>
+                                        <td className="text-center fw-bold">{item.count.toLocaleString()} ครั้ง</td>
+                                        <td className="text-center">{getLatencyBadge(item.avgLatency)}</td>
+                                        <td className="text-center">
+                                            <span className={`badge ${item.errorRate > 0 ? 'bg-danger text-white' : 'bg-green-lt text-green'}`}>
+                                                {item.errorRate}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
