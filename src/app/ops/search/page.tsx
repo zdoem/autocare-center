@@ -63,12 +63,14 @@ const avatarColors = [
     'bg-orange-lt', 'bg-cyan-lt', 'bg-purple-lt'
 ]
 
-const getAvatarColor = (name: string) => {
+const getAvatarColor = (name?: string | null) => {
+    if (!name) return avatarColors[0]
     const index = name.charCodeAt(0) % avatarColors.length
     return avatarColors[index]
 }
 
-const getFirstLetter = (name: string) => {
+const getFirstLetter = (name?: string | null) => {
+    if (!name) return 'C'
     return name.charAt(0)
 }
 
@@ -324,25 +326,25 @@ export default function OpsSearchPage() {
                                                     {/* Car Info */}
                                                     <td>
                                                         <div className="fw-bold">
-                                                            {car.carBrand.nameThai || car.carBrand.nameEnglish} {car.carModel.name}
+                                                            {car.carBrand?.nameThai || car.carBrand?.nameEnglish || '-'} {car.carModel?.name || ''}
                                                         </div>
                                                         <div className="small text-muted">
                                                             {car.year ? `ปี ${car.year}` : ''} {car.color ? ` • ${car.color}` : ''}
-                                                            {car.carModel.fuelType && ` • ${car.carModel.fuelType}`}
+                                                            {car.carModel?.fuelType && ` • ${car.carModel.fuelType}`}
                                                         </div>
                                                     </td>
 
                                                     {/* Owner */}
                                                     <td>
                                                         <div className="d-flex align-items-center">
-                                                            <span className={`avatar avatar-sm me-2 ${getAvatarColor(car.customer.fullName)}`}>
-                                                                {getFirstLetter(car.customer.fullName)}
+                                                            <span className={`avatar avatar-sm me-2 ${getAvatarColor(car.customer?.fullName)}`}>
+                                                                {getFirstLetter(car.customer?.fullName)}
                                                             </span>
                                                             <div>
-                                                                <div className="fw-bold">{car.customer.fullName}</div>
+                                                                <div className="fw-bold">{car.customer?.fullName || '-'}</div>
                                                                 <div className="small text-muted">
                                                                     <span className="badge badge-sm bg-secondary">
-                                                                        {car.customer.customerType.name}
+                                                                        {car.customer?.customerType?.name || 'ทั่วไป'}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -351,9 +353,13 @@ export default function OpsSearchPage() {
 
                                                     {/* Phone */}
                                                     <td>
-                                                        <a href={`tel:${car.customer.phone}`} className="text-reset">
-                                                            {car.customer.phone}
-                                                        </a>
+                                                        {car.customer?.phone ? (
+                                                            <a href={`tel:${car.customer.phone}`} className="text-reset">
+                                                                {car.customer.phone}
+                                                            </a>
+                                                        ) : (
+                                                            '-'
+                                                        )}
                                                     </td>
 
                                                     {/* Last Service */}
